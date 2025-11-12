@@ -99,3 +99,37 @@ CREATE TABLE IF NOT EXISTS tentativas_contato (
     FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
+
+CREATE TABLE IF NOT EXISTS conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id),
+    FOREIGN KEY (user_id) REFERENCES usuarios(id)  -- Referência à tabela de usuários existente
+);
+
+CREATE TABLE IF NOT EXISTS attachments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    message_id INT NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    stored_filename VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    size INT NOT NULL,
+    FOREIGN KEY (message_id) REFERENCES messages(id)  -- Referência à tabela de mensagens
+);
+
+CREATE TABLE IF NOT EXISTS conversation_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL,
+    user_id INT NOT NULL,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id),
+    FOREIGN KEY (user_id) REFERENCES usuarios(id)
+);
