@@ -47,10 +47,20 @@
   <style type="text/tailwindcss">
     :root {
       color-scheme: light;
+      caret-color: #1f2937;
     }
 
     body {
       @apply bg-slate-100 text-slate-800 antialiased;
+      caret-color: #1f2937 !important;
+    }
+
+    * {
+      caret-color: #1f2937 !important;
+    }
+
+    input, textarea, [contenteditable] {
+      caret-color: #1f2937 !important;
     }
 
     .btn {
@@ -178,29 +188,36 @@
           </button>
         </div>
 
-        {% if current_user.is_authenticated %}
-          {% set role = current_user.role or '' %}
-          {% set view_args = request.view_args or {} %}
+        <div
+          id="main-navigation"
+          data-menu
+          class="hidden flex-col gap-4 rounded-2xl border border-white/80 bg-white/80 p-4 shadow-lg shadow-primario-100/40 backdrop-blur-sm lg:flex lg:flex-row lg:items-center lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0"
+        >
+          <nav class="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-1">
+            <!-- Link público para acompanhamento -->
+            <a href="{{ url_for('reception.acompanhar_pedido') }}"  
+              class="nav-link{% if request.endpoint == 'reception.acompanhar_pedido' %} nav-link-active{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Acompanhar Pedido
+            </a>
 
-          <div
-            id="main-navigation"
-            data-menu
-            class="hidden flex-col gap-4 rounded-2xl border border-white/80 bg-white/80 p-4 shadow-lg shadow-primario-100/40 backdrop-blur-sm lg:flex lg:flex-row lg:items-center lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0"
-          >
-            <nav class="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-1">
+            {% if current_user.is_authenticated %}
+              {% set role = current_user.role or '' %}
+              {% set view_args = request.view_args or {} %}
 
-                  <a href="{{ url_for('chat.chat') }}"  
-                    class="nav-link{% if request.blueprint == 'chat' %} nav-link-active{% endif %}">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 11h14M7 15h10M9 19h6" />
-                      </svg>
-                      Chat
-                  </a>
-
+              <a href="{{ url_for('chat.chat') }}"  
+                class="nav-link{% if request.blueprint == 'chat' %} nav-link-active{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 11h14M7 15h10M9 19h6" />
+                  </svg>
+                  Chat
+              </a>
 
               {% if role in ['recepcao', 'admin'] %}
                 <a href="{{ url_for('reception.listar_pedidos') }}"
-                   class="nav-link{% if request.blueprint == 'reception' %} nav-link-active{% endif %}">
+                   class="nav-link{% if request.blueprint == 'reception' and request.endpoint != 'reception.acompanhar_pedido' %} nav-link-active{% endif %}">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 11h14M7 15h10M9 19h6" />
                   </svg>
@@ -301,36 +318,45 @@
                   </div>
                 </div>
               {% endif %}
-            </nav>
 
-            <div class="hidden h-10 w-px bg-slate-200 lg:block"></div>
+              {% if current_user.is_authenticated %}
+                <div class="hidden h-10 w-px bg-slate-200 lg:block"></div>
 
-            <div class="flex flex-col gap-3 rounded-2xl border border-primario-100 bg-primario-50/60 p-4 text-sm text-slate-600 lg:flex-row lg:items-center lg:gap-4 lg:border-0 lg:bg-transparent lg:p-0">
-              <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primario-600 font-semibold text-white">
-                  {{ (current_user.nome or 'US')[0:2]|upper }}
-                </span>
-                <div class="flex flex-col text-left">
-                  <span class="font-semibold text-slate-900">{{ current_user.nome }}</span>
-                  <span class="text-xs uppercase tracking-[0.15em] text-primario-600">
-                    {{ current_user.role.replace('_', ' ').title() if current_user.role else 'Usuário' }}
-                  </span>
-                  {% if usuario_logado_unidade %}
-                    <span class="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zm0 0C12 7.134 8 4 8 4s-4 3.134-4 7.5S8 20 8 20s4-3.134 4-7.5z" />
-                      </svg>
-                      Unidade: {{ usuario_logado_unidade }}
+                <div class="flex flex-col gap-3 rounded-2xl border border-primario-100 bg-primario-50/60 p-4 text-sm text-slate-600 lg:flex-row lg:items-center lg:gap-4 lg:border-0 lg:bg-transparent lg:p-0">
+                  <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primario-600 font-semibold text-white">
+                      {{ (current_user.nome or 'US')[0:2]|upper }}
                     </span>
-                  {% endif %}
+                    <div class="flex flex-col text-left">
+                      <span class="font-semibold text-slate-900">{{ current_user.nome }}</span>
+                      <span class="text-xs uppercase tracking-[0.15em] text-primario-600">
+                        {{ current_user.role.replace('_', ' ').title() if current_user.role else 'Usuário' }}
+                      </span>
+                      {% if usuario_logado_unidade %}
+                        <span class="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zm0 0C12 7.134 8 4 8 4s-4 3.134-4 7.5S8 20 8 20s4-3.134 4-7.5z" />
+                          </svg>
+                          Unidade: {{ usuario_logado_unidade }}
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <a href="{{ url_for('auth.logout') }}" class="btn-outline text-sm">
+                    Sair
+                  </a>
                 </div>
-              </div>
-              <a href="{{ url_for('auth.logout') }}" class="btn-outline text-sm">
-                Sair
-              </a>
-            </div>
-          </div>
-        {% endif %}
+              {% else %}
+                <!-- Links para usuários não autenticados -->
+                <div class="flex items-center gap-2">
+                  <a href="{{ url_for('auth.login') }}" class="btn-outline text-sm">
+                    Entrar no Sistema
+                  </a>
+                </div>
+              {% endif %}
+            {% endif %}
+          </nav>
+        </div>
       </div>
     </header>
 
@@ -377,7 +403,8 @@
             Versão {{ app_version or '1.0.0' }}
           </span>
           <span class="hidden h-3 w-[1px] bg-slate-300 lg:block"></span>
-          <p>Suporte: <a href="mailto:ti.saude@cosmopolis.sp.gov.br" class="font-medium text-primario-600 hover:text-primario-700">ti.saude@cosmopolis.sp.gov.br</a></p>
+          <p>Suporte: <a href="mailto:ti.saude@cosmopolis.sp.gov.br" class="font-medium text-primario-600 hover:text-primario-700">ti.saude@cosmopolis.sp.gov.br</a> | 
+          <a href="{{ url_for('reception.acompanhar_pedido') }}" class="font-medium text-primario-600 hover:text-primario-700">Acompanhar Pedido</a></p>
         </div>
       </div>
     </footer>

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Acompanhamento de Pedidos{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <!-- Formulário de busca -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-semibold text-slate-700 mb-2">Acompanhamento de Pedidos</h1>
+      <p class="text-slate-500">Consulte o status dos seus pedidos de exame</p>
+    </div>
+
+    <form method="post" class="max-w-md mx-auto">
+      <div class="flex gap-3">
+        <input 
+          type="text" 
+          name="cpf" 
+          placeholder="Digite seu CPF (somente números)" 
+          maxlength="11"
+          pattern="[0-9]{11}"
+          value="{{ cpf_consulta or '' }}"
+          class="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-primario-400 focus:ring-2 focus:ring-primario-200 outline-none"
+          required
+        />
+        <button type="submit" class="btn-primary px-6">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Consultar
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mt-2 text-center">
+        Digite apenas os números do CPF, sem pontos ou traços
+      </p>
+    </form>
+  </div>
+
+  <!-- Resultados da consulta -->
+  {% if pedidos %}
+    <div class="space-y-4">
+      <div class="bg-white rounded-lg shadow-sm p-4">
+        <h2 class="text-lg font-semibold text-slate-700 mb-2">
+          Pedidos encontrados para CPF {{ cpf_consulta[:3] }}.***.***-{{ cpf_consulta[-2:] }}
+        </h2>
+        <p class="text-sm text-slate-500">
+          {{ pedidos|length }} pedido(s) encontrado(s)
+        </p>
+      </div>
+
+      {% for pedido in pedidos %}
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+          <!-- Cabeçalho do pedido -->
+          <div class="p-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-lg font-semibold text-slate-700">
+                  Pedido #{{ pedido.id }}
+                </h3>
+                <p class="text-slate-600">{{ pedido.exame_nome }}</p>
+                <p class="text-sm text-slate-500">
+                  Solicitado em {{ pedido.data_solicitacao.strftime("%d/%m/%Y às %H:%M") if pedido.data_solicitacao }}
+                </p>
+              </div>
+              <div class="text-right">
+                {% set status_class = 'bg-blue-100 text-blue-800' %}
+                {% if 'CANCELADO' in pedido.status %}
+                  {% set status_class = 'bg-red-100 text-red-800' %}
+                {% elif 'AGENDADO' in pedido.status %}
+                  {% set status_class = 'bg-green-100 text-green-800' %}
+                {% elif 'DEVOLVIDO' in pedido.status %}
+                  {% set status_class = 'bg-yellow-100 text-yellow-800' %}
+                {% endif %}
+                
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ status_class }}">
+                  {{ pedido.status.replace('_', ' ').title() }}
+                </span>
+                
+                {% if pedido.prioridade %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 {{ 'bg-red-100 text-red-800' if pedido.prioridade == 'P1' else 'bg-yellow-100 text-yellow-800' }}">
+                    {{ pedido.prioridade }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Informações do agendamento (se existir) -->
+          {% if pedido.data_exame %}
+            <div class="p-4 bg-green-50 border-b border-slate-200">
+              <h4 class="font-semibold text-green-800 mb-2">📅 Agendamento</h4>
+              <div class="grid md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span class="text-slate-600">Data:</span>
+                  <span class="font-medium text-slate-800">{{ pedido.data_exame.strftime("%d/%m/%Y") }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-600">Horário:</span>
+                  <span class="font-medium text-slate-800">{{ pedido.horario_exame.strftime("%H:%M") if pedido.horario_exame else 'A definir' }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-600">Local:</span>
+                  <span class="font-medium text-slate-800">{{ pedido.local_exame or 'A definir' }}</span>
+                </div>
+              </div>
+              {% if pedido.observacoes %}
+                <div class="mt-3">
+                  <span class="text-slate-600">Observações:</span>
+                  <span class="text-slate-800">{{ pedido.observacoes }}</span>
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <!-- Histórico do pedido -->
+          <div class="p-4">
+            <h4 class="font-semibold text-slate-700 mb-3">📋 Histórico do Pedido</h4>
+            
+            {% if pedido.historico %}
+              <div class="space-y-3">
+                {% for evento in pedido.historico %}
+                  <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+                    <div class="flex-shrink-0 w-2 h-2 bg-primario-500 rounded-full mt-2"></div>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <p class="font-medium text-slate-700">{{ evento.status.replace('_', ' ').title() }}</p>
+                          {% if evento.descricao %}
+                            <p class="text-sm text-slate-600 mt-1">{{ evento.descricao }}</p>
+                          {% endif %}
+                        </div>
+                        <span class="text-xs text-slate-400">
+                          {{ evento.criado_em.strftime("%d/%m/%Y %H:%M") if evento.criado_em }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-sm text-slate-500 italic">Nenhum histórico disponível</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% elif request.method == "POST" %}
+    <!-- Mensagem quando não encontrar pedidos -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+      <svg class="w-12 h-12 mx-auto mb-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <h3 class="text-lg font-semibold text-blue-800 mb-2">Nenhum pedido encontrado</h3>
+      <p class="text-blue-700">Não foram encontrados pedidos para o CPF informado.</p>
+      <p class="text-sm text-blue-600 mt-2">
+        Verifique se o CPF está correto ou se o pedido foi feito recentemente.
+      </p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+// Máscara para CPF
+document.addEventListener('DOMContentLoaded', function() {
+  const cpfInput = document.querySelector('input[name="cpf"]');
+  
+  if (cpfInput) {
+    cpfInput.addEventListener('input', function(e) {
+      // Remove tudo que não é número
+      let valor = e.target.value.replace(/\D/g, '');
+      
+      // Limita a 11 dígitos
+      if (valor.length > 11) {
+        valor = valor.slice(0, 11);
+      }
+      
+      e.target.value = valor;
+    });
+  }
+});
+</script>
+{% endblock %}

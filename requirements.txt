@@ -1,4 +1,18 @@
+# ---- Núcleo Flask ----
 Flask==3.0.3
 Flask-Login==0.6.3
 python-dotenv==1.0.1
+
+# ---- Banco de Dados ----
 mysql-connector-python==9.0.0
+
+# ---- Realtime / WebSocket ----
+# Flask-SocketIO não precisa de underscore ("_")
+Flask-SocketIO==5.4.1
+python-socketio==5.11.3
+python-engineio==4.8.2
+
+# ---- Backend async (modo gevent) ----
+gevent>=24.2.1
+gevent-websocket>=0.10.1
+greenlet>=3.1.0   # Necessário p/ gevent funcionar em Python 3.14

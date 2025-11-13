@@ -190,3 +190,37 @@ def obter_historico(pedido_id: int) -> list[dict]:
     with mysql.get_cursor() as (_, cursor):
         cursor.execute(query, (pedido_id,))
         return cursor.fetchall()
+
+
+def listar_por_paciente(paciente_id: int) -> list[dict]:
+    """Lista todos os pedidos de um paciente específico"""
+    query = """
+        SELECT 
+            p.id,
+            p.status,
+            p.tipo_regulacao,
+            p.prioridade,
+            p.data_solicitacao,
+            p.data_atualizacao,
+            p.data_exame,
+            p.horario_exame,
+            p.local_exame,
+            p.observacoes,
+            p.motivo_cancelamento,
+            p.motivo_devolucao,
+            pac.nome as paciente_nome,
+            pac.cpf as paciente_cpf,
+            e.nome as exame_nome,
+            u.nome as unidade_nome,
+            u_criacao.nome as usuario_criacao_nome
+        FROM pedidos p
+        JOIN pacientes pac ON p.paciente_id = pac.id
+        JOIN exames e ON p.exame_id = e.id
+        JOIN unidades_saude u ON p.unidade_id = u.id
+        JOIN usuarios u_criacao ON p.usuario_criacao = u_criacao.id
+        WHERE p.paciente_id = %s
+        ORDER BY p.data_solicitacao DESC
+    """
+    with mysql.get_cursor(dictionary=True) as (_, cursor):
+        cursor.execute(query, (paciente_id,))
+        return cursor.fetchall()

@@ -19,45 +19,185 @@
     </div>
   </div>
 
-  <div class="space-y-4">
-    {% for pedido in pedidos %}
-      <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-          <div>
-            <h2 class="text-lg font-semibold text-slate-700">#{{ pedido.id }} · {{ pedido.paciente_nome }}</h2>
-            <p class="text-sm text-slate-500">{{ pedido.exame_nome }} · Unidade: {{ pedido.unidade_nome }}</p>
-            <p class="text-xs text-slate-400 mt-1">
-              Criado em {{ pedido.data_solicitacao.strftime("%d/%m/%Y %H:%M") if pedido.data_solicitacao }}
-            </p>
-          </div>
-          <div class="flex gap-2">
-            <span class="badge bg-emerald-100 text-emerald-700">Prioridade {{ pedido.prioridade }}</span>
-          </div>
-        </div>
+  {% if pedidos %}
+    <!-- Cabeçalho da tabela -->
+    <div class="bg-slate-50 rounded-lg p-3 grid grid-cols-12 gap-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">
+      <div class="col-span-1">#</div>
+      <div class="col-span-3">Paciente & Exame</div>
+      <div class="col-span-2">Unidade</div>
+      <div class="col-span-2">Data/Prioridade</div>
+      <div class="col-span-4">Ações</div>
+    </div>
 
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-          <form method="post" action="{{ url_for('regulator.aprovar', pedido_id=pedido.id) }}" class="bg-white border border-slate-200 rounded p-3 space-y-2">
-            <input type="hidden" name="tipo_regulacao" value="{{ tipo }}">
-            <p class="text-sm text-slate-600">Encaminhar para agendamento.</p>
-            <button type="submit" class="btn-primary w-full text-sm">Aprovar</button>
-          </form>
-          <form method="post" action="{{ url_for('regulator.devolver', pedido_id=pedido.id) }}" class="bg-white border border-slate-200 rounded p-3 space-y-2">
-            <label class="text-sm font-medium text-slate-600">Devolver à recepção</label>
-            <textarea name="motivo" rows="2" required class="w-full border-slate-300 rounded focus:border-sky-500 focus:ring-sky-500 text-sm" placeholder="Motivo da devolução"></textarea>
-            <button type="submit" class="btn-outline w-full text-sm">Devolver</button>
-          </form>
-          <form method="post" action="{{ url_for('regulator.cancelar', pedido_id=pedido.id) }}" class="bg-white border border-red-200 rounded p-3 space-y-2">
-            <label class="text-sm font-medium text-slate-600">Cancelar</label>
-            <textarea name="motivo" rows="2" required class="w-full border-slate-300 rounded focus:border-sky-500 focus:ring-sky-500 text-sm" placeholder="Motivo do cancelamento"></textarea>
-            <button type="submit" class="w-full px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Cancelar pedido</button>
-          </form>
+    <!-- Lista de pedidos compacta -->
+    <div class="space-y-2">
+      {% for pedido in pedidos %}
+        <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+          <div class="grid grid-cols-12 gap-3 items-center">
+            <!-- ID -->
+            <div class="col-span-1">
+              <span class="text-lg font-bold text-primario-600">#{{ pedido.id }}</span>
+            </div>
+            
+            <!-- Paciente & Exame -->
+            <div class="col-span-3">
+              <div class="font-semibold text-slate-700">{{ pedido.paciente_nome }}</div>
+              <div class="text-sm text-slate-500">{{ pedido.exame_nome }}</div>
+            </div>
+            
+            <!-- Unidade -->
+            <div class="col-span-2">
+              <div class="text-sm text-slate-600">{{ pedido.unidade_nome }}</div>
+            </div>
+            
+            <!-- Data e Prioridade -->
+            <div class="col-span-2">
+              <div class="text-xs text-slate-500">
+                {{ pedido.data_solicitacao.strftime("%d/%m/%Y") if pedido.data_solicitacao }}
+              </div>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ 'bg-red-100 text-red-800' if pedido.prioridade == 'P1' else 'bg-yellow-100 text-yellow-800' }}">
+                {{ pedido.prioridade }}
+              </span>
+            </div>
+            
+            <!-- Ações compactas -->
+            <div class="col-span-4 flex gap-2">
+              <!-- Aprovar -->
+              <form method="post" action="{{ url_for('regulator.aprovar', pedido_id=pedido.id) }}" class="flex-1">
+                <input type="hidden" name="tipo_regulacao" value="{{ tipo }}">
+                <button type="submit" class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors">
+                  ✓ Aprovar
+                </button>
+              </form>
+              
+              <!-- Devolver -->
+              <button type="button" onclick="abrirModalDevolver('{{ pedido.id }}', '{{ tipo }}')" 
+                      class="flex-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition-colors">
+                ↵ Devolver
+              </button>
+              
+              <!-- Cancelar -->
+              <button type="button" onclick="abrirModalCancelar('{{ pedido.id }}')" 
+                      class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
+                ✕ Cancelar
+              </button>
+            </div>
+          </div>
         </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-teal-50 border border-teal-200 text-teal-800 rounded-lg p-8 text-center">
+      <svg class="w-12 h-12 mx-auto mb-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+      <h3 class="text-lg font-semibold mb-2">Tudo em dia!</h3>
+      <p>Nenhum pedido {{ 'municipal' if tipo == 'municipal' else 'estadual' }} aguardando análise.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal para Devolver -->
+<div id="modal-devolver" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg w-96 max-w-90vw">
+    <div class="p-4 border-b">
+      <h3 class="text-lg font-semibold text-slate-700">Devolver Pedido #<span id="pedido-devolver-id"></span></h3>
+    </div>
+    <form id="form-devolver" method="post">
+      <input type="hidden" name="tipo_regulacao" id="tipo-regulacao-devolver">
+      <div class="p-4 space-y-3">
+        <label class="text-sm font-medium text-slate-600">Motivo da devolução</label>
+        <textarea name="motivo" rows="3" required class="w-full border border-slate-300 rounded focus:border-sky-500 focus:ring-2 focus:ring-sky-200 text-sm" placeholder="Descreva o motivo da devolução..."></textarea>
       </div>
-    {% else %}
-      <div class="bg-teal-200 text-teal-800 rounded-lg p-6 text-center">
-        Nenhum pedido {{ 'municipal' if tipo == 'municipal' else 'estadual' }} aguardando análise.
+      <div class="p-4 border-t flex gap-2">
+        <button type="button" onclick="fecharModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-600 rounded hover:bg-slate-50">
+          Cancelar
+        </button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded">
+          Devolver
+        </button>
       </div>
-    {% endfor %}
+    </form>
   </div>
 </div>
+
+<!-- Modal para Cancelar -->
+<div id="modal-cancelar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg w-96 max-w-90vw">
+    <div class="p-4 border-b">
+      <h3 class="text-lg font-semibold text-slate-700">Cancelar Pedido #<span id="pedido-cancelar-id"></span></h3>
+    </div>
+    <form id="form-cancelar" method="post">
+      <div class="p-4 space-y-3">
+        <label class="text-sm font-medium text-slate-600">Motivo do cancelamento</label>
+        <textarea name="motivo" rows="3" required class="w-full border border-slate-300 rounded focus:border-sky-500 focus:ring-2 focus:ring-sky-200 text-sm" placeholder="Descreva o motivo do cancelamento..."></textarea>
+      </div>
+      <div class="p-4 border-t flex gap-2">
+        <button type="button" onclick="fecharModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-600 rounded hover:bg-slate-50">
+          Cancelar
+        </button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">
+          Confirmar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function abrirModalDevolver(pedidoId, tipo) {
+  const modal = document.getElementById('modal-devolver');
+  const form = document.getElementById('form-devolver');
+  const pedidoIdSpan = document.getElementById('pedido-devolver-id');
+  const tipoInput = document.getElementById('tipo-regulacao-devolver');
+  
+  // Configurar form action - CORREÇÃO DA URL
+  form.action = `/regulador/pedidos/${pedidoId}/devolver`;
+  
+  // Configurar campos
+  pedidoIdSpan.textContent = pedidoId;
+  tipoInput.value = tipo;
+  
+  // Limpar textarea
+  form.querySelector('textarea[name="motivo"]').value = '';
+  
+  modal.classList.remove('hidden');
+}
+
+function abrirModalCancelar(pedidoId) {
+  const modal = document.getElementById('modal-cancelar');
+  const form = document.getElementById('form-cancelar');
+  const pedidoIdSpan = document.getElementById('pedido-cancelar-id');
+  
+  // Configurar form action - CORREÇÃO DA URL
+  form.action = `/regulador/pedidos/${pedidoId}/cancelar`;
+  
+  // Configurar campos
+  pedidoIdSpan.textContent = pedidoId;
+  
+  // Limpar textarea
+  form.querySelector('textarea[name="motivo"]').value = '';
+  
+  modal.classList.remove('hidden');
+}
+
+function fecharModal() {
+  document.getElementById('modal-devolver').classList.add('hidden');
+  document.getElementById('modal-cancelar').classList.add('hidden');
+}
+
+// Fechar modal clicando fora
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'modal-devolver' || e.target.id === 'modal-cancelar') {
+    fecharModal();
+  }
+});
+
+// ESC para fechar modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    fecharModal();
+  }
+});
+</script>
 {% endblock %}

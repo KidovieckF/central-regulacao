@@ -1,4 +1,7 @@
 SCHEMA_STATEMENTS = [
+    # -------------------------------------------------------------------------
+    # Tabelas principais do sistema
+    # -------------------------------------------------------------------------
     """
     CREATE TABLE IF NOT EXISTS unidades_saude (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -7,7 +10,7 @@ SCHEMA_STATEMENTS = [
         telefone VARCHAR(20),
         endereco VARCHAR(255),
         ativo TINYINT(1) DEFAULT 1
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -25,10 +28,12 @@ SCHEMA_STATEMENTS = [
         ) NOT NULL,
         unidade_id INT NULL,
         ativo TINYINT(1) DEFAULT 1,
+        is_online BOOLEAN DEFAULT FALSE,
+        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
         atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (unidade_id) REFERENCES unidades_saude(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
     CREATE TABLE IF NOT EXISTS pacientes (
@@ -45,14 +50,14 @@ SCHEMA_STATEMENTS = [
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
         atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (unidade_id) REFERENCES unidades_saude(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
     CREATE TABLE IF NOT EXISTS exames (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nome VARCHAR(150) NOT NULL,
         descricao TEXT
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
     CREATE TABLE IF NOT EXISTS pedidos (
@@ -81,7 +86,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (unidade_id) REFERENCES unidades_saude(id),
         FOREIGN KEY (usuario_criacao) REFERENCES usuarios(id),
         FOREIGN KEY (usuario_atualizacao) REFERENCES usuarios(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
     CREATE TABLE IF NOT EXISTS historico_pedidos (
@@ -93,7 +98,7 @@ SCHEMA_STATEMENTS = [
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
         FOREIGN KEY (criado_por) REFERENCES usuarios(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
     CREATE TABLE IF NOT EXISTS tentativas_contato (
@@ -106,6 +111,54 @@ SCHEMA_STATEMENTS = [
         usuario_id INT NOT NULL,
         FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+
+    # -------------------------------------------------------------------------
+    # Módulo de CHAT — alinhado ao backend e templates
+    # -------------------------------------------------------------------------
+    """
+    CREATE TABLE IF NOT EXISTS conversations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        room VARCHAR(100) NOT NULL,          -- nome único da sala
+        name VARCHAR(200),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS messages (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        conversation_id INT NOT NULL,
+        user_id INT NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX (conversation_id),
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS attachments (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        message_id BIGINT NOT NULL,
+        original_filename VARCHAR(512) NOT NULL,
+        stored_filename VARCHAR(512) NOT NULL,
+        mime_type VARCHAR(255),
+        size INT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX (message_id),
+        FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS conversation_participants (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        conversation_id INT NOT NULL,
+        user_id INT NOT NULL,
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+        UNIQUE KEY uq_conversation_user (conversation_id, user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
 ]

@@ -2,135 +2,1085 @@
 {% block title %}Chat{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-sm">
-  <div class="flex flex-col h-[70vh]">
+<style>
+/* CSS para mensagens - mantendo o que já funciona */
+.chat-bubble {
+  max-width: 70% !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  margin-bottom: 8px !important;
+  word-wrap: break-word !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1) !important;
+  display: block !important;
+  clear: both !important;
+}
 
-    <!-- Abas -->
-    <div id="chat-tabs" class="flex border-b border-slate-200 bg-slate-50">
-      {% if role == 'admin' %}
-        {% for conversa in conversas %}
-          <button class="tab-button {% if loop.first %}active border-b-2 border-primario-600 text-primario-700{% else %}text-slate-600 hover:text-primario-700{% endif %} px-4 py-2 text-sm font-medium"
-                  data-room="{{ conversa.room }}"
-                  data-id="{{ conversa.id }}">
-            {{ conversa.participantes }}
-          </button>
-        {% endfor %}
-      {% else %}
-        <button class="tab-button active px-4 py-2 text-sm font-medium text-primario-700 border-b-2 border-primario-600"
-                data-room="{{ room_name }}"
-                data-id="{{ conversation_id }}">
-          Chat com Admin
-        </button>
-      {% endif %}
-    </div>
+.chat-bubble.sent {
+  background-color: #d9fdd3 !important;
+  float: right !important;
+  border-bottom-right-radius: 2px !important;
+  text-align: left !important;
+}
 
-    <!-- Mensagens -->
-    <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50"></div>
+.chat-bubble.received {
+  background-color: white !important;
+  float: left !important;
+  border-bottom-left-radius: 2px !important;
+}
 
-    <!-- Campo de mensagem -->
-    <div class="flex items-center border-t border-slate-200 bg-white p-3">
-      <input id="message-input" type="text" placeholder="Digite sua mensagem..."
-             class="flex-1 rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-primario-400 focus:ring-1 focus:ring-primario-400 outline-none" />
-      <button id="send-button"
-              class="ml-3 rounded-xl bg-primario-600 text-white px-4 py-2 text-sm font-semibold hover:bg-primario-700">
-        Enviar
+.chat-bubble .sender-name {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: #00a884 !important;
+  margin-bottom: 2px !important;
+}
+
+.chat-bubble .message-time {
+  font-size: 11px !important;
+  color: #667781 !important;
+  margin-top: 4px !important;
+  opacity: 0.8 !important;
+}
+
+#messages::after {
+  content: "" !important;
+  display: table !important;
+  clear: both !important;
+}
+
+/* ESTILOS PARA ARQUIVOS */
+.file-attachment {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  margin: 4px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+}
+
+.file-attachment:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.file-icon {
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: white !important;
+}
+
+.file-info {
+  flex: 1 !important;
+}
+
+.file-name {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+}
+
+.file-size {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+}
+
+.image-preview {
+  max-width: 250px !important;
+  max-height: 200px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+}
+
+.file-preview-container {
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.file-preview-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: white !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+}
+
+.remove-file {
+  color: #ef4444 !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+/* ESTILOS PARA STATUS ONLINE/OFFLINE */
+.avatar-with-status {
+  position: relative !important;
+}
+
+.status-indicator {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  border: 2px solid white !important;
+  background-color: #6b7280 !important;
+}
+
+.status-indicator.online {
+  background-color: #22c55e !important;
+  animation: pulse-green 2s infinite !important;
+}
+
+.status-indicator.offline {
+  background-color: #6b7280 !important;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.status-text {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.status-text.online {
+  color: #22c55e !important;
+}
+
+.status-text.offline {
+  color: #6b7280 !important;
+}
+
+/* NOVOS ESTILOS PARA CONVERSAS E MODAL */
+.conversa-item-moderna {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  background: white !important;
+}
+
+.conversa-item-moderna:hover {
+  background-color: #f8fafc !important;
+}
+
+.conversa-item-moderna.ativa {
+  background-color: #dcfce7 !important;
+  border-left: 4px solid #16a34a !important;
+}
+
+.conversa-avatar {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 600 !important;
+  color: white !important;
+  font-size: 18px !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.conversa-conteudo {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.conversa-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 4px !important;
+}
+
+.conversa-nome {
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.conversa-hora {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+}
+
+.conversa-preview {
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.conversa-item-moderna.ativa .conversa-nome {
+  color: #16a34a !important;
+  font-weight: 600 !important;
+}
+
+.conversa-item-moderna.ativa .conversa-preview {
+  color: #16a34a !important;
+}
+
+/* Modal melhorado */
+.modal-moderno {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.modal-conteudo-moderno {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  overflow: hidden !important;
+  width: 450px !important;
+  max-width: 90vw !important;
+  max-height: 80vh !important;
+}
+
+.modal-header-moderno {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  color: white !important;
+  padding: 20px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.modal-titulo {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
+.modal-fechar {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
+  color: white !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+  font-size: 18px !important;
+}
+
+.modal-fechar:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.modal-corpo {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
+
+.contato-item-moderno {
+  display: flex !important;
+  align-items: center !important;
+  padding: 14px 24px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.contato-item-moderno:hover {
+  background-color: #f8fafc !important;
+}
+
+.contato-item-moderno:last-child {
+  border-bottom: none !important;
+}
+
+.contato-avatar {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 600 !important;
+  color: white !important;
+  font-size: 16px !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.contato-info {
+  flex: 1 !important;
+}
+
+.contato-nome {
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+  margin-bottom: 2px !important;
+}
+
+.contato-cargo {
+  color: #6b7280 !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+
+/* Estado vazio melhorado */
+.estado-vazio {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 60px 20px !important;
+  text-align: center !important;
+  color: #9ca3af !important;
+}
+
+.estado-vazio svg {
+  width: 64px !important;
+  height: 64px !important;
+  margin-bottom: 16px !important;
+  opacity: 0.5 !important;
+}
+
+.estado-vazio h3 {
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+  color: #6b7280 !important;
+}
+
+.estado-vazio p {
+  font-size: 14px !important;
+  max-width: 300px !important;
+}
+</style>
+
+<div class="flex mx-auto h-[80vh] max-w-5xl border border-slate-200 rounded-2xl shadow-sm bg-white">
+  <!-- Sidebar -->
+  <aside class="w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
+    <div class="p-4 border-b bg-white flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="avatar-with-status">
+          <div class="conversa-avatar" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); width: 40px; height: 40px; font-size: 16px;">
+            {{ current_user.nome[0].upper() if current_user.nome else 'U' }}
+          </div>
+          <div class="status-indicator online"></div>
+        </div>
+        <h2 class="font-semibold text-slate-700 text-lg">Conversas</h2>
+      </div>
+      <button id="btn-contatos" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        Novo
       </button>
     </div>
+    <div id="chat-lista" class="flex-1 overflow-y-auto bg-white"></div>
+  </aside>
 
+  <!-- Área de mensagens -->
+  <section class="flex-1 flex flex-col">
+    <div id="chat-header" class="p-4 border-b border-slate-200 bg-white text-slate-700 font-semibold flex items-center gap-3">
+      <div id="header-avatar-container" class="avatar-with-status hidden">
+        <div id="header-avatar" class="conversa-avatar" style="width: 40px; height: 40px; font-size: 16px;">A</div>
+        <div id="header-status-indicator" class="status-indicator offline"></div>
+      </div>
+      <div>
+        <div id="header-nome">Selecione uma conversa</div>
+        <div id="header-status" class="status-text offline hidden">offline</div>
+      </div>
+    </div>
+    <div id="messages" class="flex-1 overflow-y-auto p-4 bg-slate-50" style="line-height: 1.2;"></div>
+
+    <!-- Formulário com suporte a arquivos -->
+    <div id="chat-form-container" class="border-t border-slate-200 bg-white hidden">
+      <!-- Preview de arquivos -->
+      <div id="file-preview" class="hidden p-3 border-b border-slate-200"></div>
+      
+      <form id="chat-form" class="flex items-center p-4 gap-3">
+        <!-- Botão de anexo -->
+        <button type="button" id="btn-anexo" class="text-gray-500 hover:text-green-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+          </svg>
+        </button>
+        
+        <!-- Input de arquivo (oculto) -->
+        <input type="file" id="file-input" class="hidden" multiple accept="image/*,.pdf,.docx,.txt,.xlsx,.xls,.zip,.rar">
+        
+        <!-- Input de texto -->
+        <input id="message-input" type="text" placeholder="Digite uma mensagem..."
+               class="flex-1 rounded-full border border-slate-300 px-4 py-2 text-base focus:border-green-400 focus:ring-2 focus:ring-green-200 outline-none" />
+        
+        <!-- Botão enviar -->
+        <button id="send-button" type="submit"
+                class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-all hover:scale-105">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<!-- Modal de Contatos Melhorado -->
+<div id="contatos-modal" class="modal-moderno hidden fixed inset-0 flex items-center justify-center z-50">
+  <div class="modal-conteudo-moderno">
+    <div class="modal-header-moderno">
+      <h3 class="modal-titulo">Novo Chat</h3>
+      <button class="modal-fechar" onclick="fecharContatos()">&times;</button>
+    </div>
+    <div class="modal-corpo" id="lista-contatos"></div>
   </div>
 </div>
+
+<script>
+  window.currentUser = "{{ current_user.nome }}";
+</script>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-  const socket = io.connect();
+/**
+ * chat.js — Versão com compartilhamento de arquivos
+ */
 
-  let currentRoom = "{{ room_name or (conversas[0].room if conversas|length > 0 else '') }}";
-  let conversationId = "{{ conversation_id or (conversas[0].id if conversas|length > 0 else 0) }}";
-  const currentUser = "{{ current_user.nome }}";
-  const isAdmin = "{{ role }}" === "admin";
+document.addEventListener("DOMContentLoaded", () => {
+  const socket = io();
 
+  // Elementos principais do DOM
+  const listaConversas = document.getElementById("chat-lista");
   const messagesDiv = document.getElementById("messages");
-  const messageInput = document.getElementById("message-input");
-  const sendButton = document.getElementById("send-button");
-  const tabs = document.querySelectorAll(".tab-button");
+  const headerNome = document.getElementById("header-nome");
+  const headerStatus = document.getElementById("header-status");
+  const headerAvatar = document.getElementById("header-avatar");
+  const headerAvatarContainer = document.getElementById("header-avatar-container");
+  const headerStatusIndicator = document.getElementById("header-status-indicator");
+  const chatFormContainer = document.getElementById("chat-form-container");
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("message-input");
+  const btnContatos = document.getElementById("btn-contatos");
+  const modal = document.getElementById("contatos-modal");
+  const listaContatos = document.getElementById("lista-contatos");
+  
+  // Novos elementos para arquivos
+  const btnAnexo = document.getElementById("btn-anexo");
+  const fileInput = document.getElementById("file-input");
+  const filePreview = document.getElementById("file-preview");
+  
+  const currentUser = window.currentUser || "Usuário";
 
-  async function loadMessages(conversationId) {
-  console.log("📜 Carregando mensagens da conversa:", conversationId);
-  try {
-    const res = await fetch(`/chat/mensagens/${conversationId}`);
-    const mensagens = await res.json();
+  let conversaAtual = null;
+  let salaAtual = null;
+  let heartbeatInterval = null;
+  let currentConversationUserId = null;
+  let selectedFiles = [];
 
-    messagesDiv.innerHTML = "";
-    mensagens.forEach(msg => {
-      const msgElem = document.createElement("div");
-      msgElem.classList.add("px-3", "py-2", "rounded-xl", "max-w-[75%]", "text-sm", "shadow-sm");
+  // Inicialização
+  carregarConversas();
 
-      if (msg.user === "{{ current_user.nome }}") {
-        msgElem.classList.add("bg-primario-100", "self-end", "ml-auto");
-      } else {
-        msgElem.classList.add("bg-white", "border", "border-slate-200");
-      }
-
-      msgElem.innerHTML = `<strong>${msg.user}:</strong> ${msg.message}`;
-      messagesDiv.appendChild(msgElem);
-    });
-
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  } catch (e) {
-    console.error("❌ Erro ao carregar mensagens:", e);
-  }
-}
-
-  function joinRoom(roomName, id) {
-    console.log("🔁 Entrando na sala:", roomName);
-    socket.emit("join", { room: roomName });
-    currentRoom = roomName;
-    conversationId = id;
-
-    tabs.forEach(btn => btn.classList.remove("active", "border-b-2", "border-primario-600", "text-primario-700"));
-    const activeTab = document.querySelector(`[data-room="${roomName}"]`);
-    if (activeTab)
-      activeTab.classList.add("active", "border-b-2", "border-primario-600", "text-primario-700");
-
-    loadMessages(id);
-  }
-
-  tabs.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const room = btn.dataset.room;
-      const id = btn.dataset.id;
-      joinRoom(room, id);
-    });
+  /* ======================================================
+   *  SISTEMA DE ARQUIVOS
+   * ====================================================== */
+  btnAnexo.addEventListener("click", () => {
+    fileInput.click();
   });
 
-  socket.on("connect", () => {
-    console.log("✅ Conectado ao servidor SocketIO");
-    joinRoom(currentRoom, conversationId);
+  fileInput.addEventListener("change", (e) => {
+    const files = Array.from(e.target.files);
+    selectedFiles.push(...files);
+    mostrarPreviewArquivos();
   });
 
-  socket.on("message", data => {
-    const messageElem = document.createElement("div");
-    messageElem.classList.add("px-3", "py-2", "rounded-xl", "max-w-[75%]", "text-sm", "shadow-sm");
-    if (data.user === currentUser) {
-      messageElem.classList.add("bg-primario-100", "self-end", "ml-auto");
-    } else {
-      messageElem.classList.add("bg-white", "border", "border-slate-200");
+  function mostrarPreviewArquivos() {
+    if (selectedFiles.length === 0) {
+      filePreview.classList.add("hidden");
+      return;
     }
-    messageElem.innerHTML = `<strong>${data.user}:</strong> ${data.msg}`;
-    messagesDiv.appendChild(messageElem);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  });
 
-  sendButton.onclick = function() {
-    if (!messageInput.value.trim()) return;
-    socket.emit("send_message", { room: currentRoom, message: messageInput.value, conversation_id: conversationId });
-    messageInput.value = "";
+    filePreview.classList.remove("hidden");
+    filePreview.innerHTML = `
+      <div class="file-preview-container">
+        ${selectedFiles.map((file, index) => `
+          <div class="file-preview-item">
+            <div class="file-icon" style="background-color: ${getFileTypeColor(file.name)}">
+              ${getFileTypeIcon(file.name)}
+            </div>
+            <div class="file-info">
+              <div class="file-name">${file.name}</div>
+              <div class="file-size">${formatarTamanhoArquivo(file.size)}</div>
+            </div>
+            <span class="remove-file" onclick="removerArquivo(${index})">&times;</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  window.removerArquivo = (index) => {
+    selectedFiles.splice(index, 1);
+    mostrarPreviewArquivos();
   };
 
-  messageInput.addEventListener("keypress", e => {
-    if (e.key === "Enter") sendButton.click();
+  function getFileTypeColor(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const colors = {
+      'pdf': '#ef4444',
+      'docx': '#2563eb', 'doc': '#2563eb',
+      'xlsx': '#059669', 'xls': '#059669',
+      'txt': '#6b7280',
+      'zip': '#7c3aed', 'rar': '#7c3aed',
+      'jpg': '#f59e0b', 'jpeg': '#f59e0b', 'png': '#f59e0b', 'gif': '#f59e0b'
+    };
+    return colors[ext] || '#6b7280';
+  }
+
+  function getFileTypeIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+      'pdf': 'PDF',
+      'docx': 'DOC', 'doc': 'DOC',
+      'xlsx': 'XLS', 'xls': 'XLS',
+      'txt': 'TXT',
+      'zip': 'ZIP', 'rar': 'RAR',
+      'jpg': 'IMG', 'jpeg': 'IMG', 'png': 'IMG', 'gif': 'IMG'
+    };
+    return icons[ext] || 'FILE';
+  }
+
+  function formatarTamanhoArquivo(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async function uploadArquivos() {
+    if (selectedFiles.length === 0) return [];
+    
+    const uploadedFiles = [];
+    
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('/chat/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+          uploadedFiles.push({
+            filename: result.filename,
+            original_name: file.name,
+            size: file.size,
+            type: file.type
+          });
+        }
+      } catch (error) {
+        console.error('Erro no upload:', error);
+      }
+    }
+    
+    return uploadedFiles;
+  }
+
+  /* ======================================================
+   *  SISTEMA DE HEARTBEAT PARA MANTER ONLINE
+   * ====================================================== */
+  function iniciarHeartbeat() {
+    heartbeatInterval = setInterval(() => {
+      socket.emit('heartbeat');
+    }, 60000);
+  }
+
+  function pararHeartbeat() {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+  }
+
+  /* ======================================================
+   *  Funções utilitárias
+   * ====================================================== */
+  function formatarHorario(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  }
+
+  function gerarCorAvatar(nome) {
+    const cores = [
+      '#ef4444', '#f97316', '#f59e0b', '#eab308', 
+      '#84cc16', '#22c55e', '#10b981', '#14b8a6', 
+      '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', 
+      '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
+    ];
+    let hash = 0;
+    for (let i = 0; i < nome.length; i++) {
+      hash = nome.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return cores[Math.abs(hash) % cores.length];
+  }
+
+  function formatarTempoRelativo(timestamp) {
+    const agora = new Date();
+    const data = new Date(timestamp);
+    const diffMs = agora - data;
+    const diffMinutos = Math.floor(diffMs / 60000);
+    
+    if (diffMinutos < 1) return 'agora';
+    if (diffMinutos < 60) return `${diffMinutos}min`;
+    
+    const diffHoras = Math.floor(diffMinutos / 60);
+    if (diffHoras < 24) return `${diffHoras}h`;
+    
+    const diffDias = Math.floor(diffHoras / 24);
+    if (diffDias < 7) return `${diffDias}d`;
+    
+    return formatarHorario(timestamp);
+  }
+
+  /* ======================================================
+   *  FUNÇÕES DE STATUS ONLINE/OFFLINE
+   * ====================================================== */
+  function atualizarStatusHeader(isOnline, lastSeenText) {
+    if (headerStatus && headerStatusIndicator) {
+      if (isOnline) {
+        headerStatus.textContent = "online";
+        headerStatus.className = "status-text online";
+        headerStatusIndicator.className = "status-indicator online";
+      } else {
+        headerStatus.textContent = lastSeenText || "offline";
+        headerStatus.className = "status-text offline";
+        headerStatusIndicator.className = "status-indicator offline";
+      }
+    }
+  }
+
+  function atualizarStatusNaListaConversas(userId, isOnline) {
+    const conversaItems = document.querySelectorAll('.conversa-item-moderna');
+    conversaItems.forEach(item => {
+      const statusIndicator = item.querySelector('.status-indicator');
+      if (statusIndicator) {
+        statusIndicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+      }
+    });
+  }
+
+  function atualizarStatusNoModal(userId, isOnline) {
+    const contatoItems = document.querySelectorAll('.contato-item-moderno');
+    contatoItems.forEach(item => {
+      if (item.dataset.userId == userId) {
+        const statusIndicator = item.querySelector('.status-indicator');
+        const statusTexts = item.querySelectorAll('.status-text');
+        if (statusIndicator) {
+          statusIndicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+        }
+        statusTexts.forEach(statusText => {
+          statusText.textContent = isOnline ? '● Online' : '○ Offline';
+          statusText.className = `status-text ${isOnline ? 'online' : 'offline'}`;
+        });
+      }
+    });
+  }
+
+  /* ======================================================
+   *  Sidebar: lista de conversas COM STATUS
+   * ====================================================== */
+  function carregarConversas() {
+    fetch("/chat/conversas")
+      .then(r => r.json())
+      .then(conversas => {
+        listaConversas.innerHTML = "";
+        
+        if (!conversas.length) {
+          listaConversas.innerHTML = `
+            <div class="estado-vazio">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+              </svg>
+              <h3>Nenhuma conversa</h3>
+              <p>Clique em "Novo" para iniciar sua primeira conversa</p>
+            </div>
+          `;
+          return;
+        }
+
+        conversas.forEach(conv => {
+          const el = document.createElement("div");
+          el.className = "conversa-item-moderna";
+          el.dataset.conversaId = conv.id;
+          
+          if (conv.id === conversaAtual) {
+            el.classList.add("ativa");
+          }
+
+          const inicialNome = conv.participantes ? conv.participantes[0].toUpperCase() : '?';
+          const corAvatar = gerarCorAvatar(conv.participantes || 'Unknown');
+          const tempoFormatado = conv.ultima_mensagem ? formatarTempoRelativo(conv.ultima_mensagem) : '';
+          const isOnline = conv.outro_user_online || false;
+
+          el.innerHTML = `
+            <div class="avatar-with-status">
+              <div class="conversa-avatar" style="background-color: ${corAvatar}">
+                ${inicialNome}
+              </div>
+              <div class="status-indicator ${isOnline ? 'online' : 'offline'}"></div>
+            </div>
+            <div class="conversa-conteudo">
+              <div class="conversa-header">
+                <div class="conversa-nome">${conv.participantes || "Sem nome"}</div>
+                <div class="conversa-hora">${tempoFormatado}</div>
+              </div>
+              <div class="conversa-preview">${conv.ultima_msg_texto || "Nenhuma mensagem ainda"}</div>
+            </div>
+          `;
+
+          el.addEventListener("click", () => {
+            document.querySelectorAll('.conversa-item-moderna').forEach(item => 
+              item.classList.remove('ativa')
+            );
+            el.classList.add('ativa');
+            abrirConversa(conv.id, conv.room, conv.participantes);
+          });
+
+          listaConversas.appendChild(el);
+        });
+      })
+      .catch(err => {
+        console.error("❌ Erro ao carregar conversas:", err);
+      });
+  }
+
+  /* ======================================================
+   *  Abrir conversa COM STATUS REAL
+   * ====================================================== */
+  async function abrirConversa(id, room, nome) {
+    conversaAtual = id;
+    salaAtual = room;
+    
+    // Limpar arquivos selecionados
+    selectedFiles = [];
+    filePreview.classList.add("hidden");
+    
+    // Atualizar header
+    headerNome.textContent = nome;
+    headerStatus.classList.remove("hidden");
+    headerAvatarContainer.classList.remove("hidden");
+    
+    headerAvatar.textContent = nome ? nome[0].toUpperCase() : '?';
+    headerAvatar.style.backgroundColor = gerarCorAvatar(nome || 'Unknown');
+    
+    // Buscar status real
+    atualizarStatusHeader(false, "verificando...");
+    try {
+      const response = await fetch(`/chat/conversa/${id}/participante`);
+      const participante = await response.json();
+      
+      currentConversationUserId = participante.user_id;
+      atualizarStatusHeader(participante.is_online, participante.last_seen_text);
+    } catch (error) {
+      console.error("❌ Erro ao buscar status:", error);
+      atualizarStatusHeader(false, "offline");
+    }
+    
+    chatFormContainer.classList.remove("hidden");
+    messagesDiv.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100px; color: #9ca3af;">Carregando mensagens...</div>';
+
+    socket.emit("join", { room });
+
+    fetch(`/chat/mensagens/${id}`)
+      .then(r => r.json())
+      .then(msgs => {
+        messagesDiv.innerHTML = "";
+        msgs.forEach(m => renderMessage(m.user, m.message, m.created_at, m.attachments));
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      })
+      .catch(err => {
+        console.error("❌ Erro ao carregar mensagens:", err);
+        messagesDiv.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100px; color: #ef4444;">Erro ao carregar mensagens</div>';
+      });
+  }
+
+  /* ======================================================
+   *  Renderização de mensagens COM ARQUIVOS
+   * ====================================================== */
+  function renderMessage(user, text, timestamp, attachments) {
+    const div = document.createElement("div");
+    div.className = "chat-bubble";
+
+    const isCurrentUser = user === currentUser;
+    
+    if (isCurrentUser) {
+      div.classList.add("sent");
+    } else {
+      div.classList.add("received");
+    }
+
+    const timeStr = timestamp ? formatarHorario(timestamp) : formatarHorario(new Date());
+    
+    let messageHTML = '';
+    
+    if (!isCurrentUser) {
+      messageHTML += `<div class="sender-name">${user}</div>`;
+    }
+    
+    if (text) {
+      messageHTML += `<div class="message-text">${text}</div>`;
+    }
+    
+    // Renderizar anexos
+    if (attachments && attachments.length > 0) {
+      attachments.forEach(attachment => {
+        messageHTML += renderAttachment(attachment);
+      });
+    }
+    
+    messageHTML += `<div class="message-time">${timeStr}</div>`;
+    
+    div.innerHTML = messageHTML;
+    messagesDiv.appendChild(div);
+  }
+
+  function renderAttachment(attachment) {
+    const isImage = attachment.mime_type && attachment.mime_type.startsWith('image/');
+    
+    if (isImage) {
+      return `
+        <div class="file-attachment" onclick="window.open('/static/uploads/${attachment.stored_filename}', '_blank')">
+          <img src="/static/uploads/${attachment.stored_filename}" alt="${attachment.original_filename}" class="image-preview">
+        </div>
+      `;
+    } else {
+      return `
+        <div class="file-attachment" onclick="window.open('/static/uploads/${attachment.stored_filename}', '_blank')">
+          <div class="file-icon" style="background-color: ${getFileTypeColor(attachment.original_filename)}">
+            ${getFileTypeIcon(attachment.original_filename)}
+          </div>
+          <div class="file-info">
+            <div class="file-name">${attachment.original_filename}</div>
+            <div class="file-size">${attachment.size ? formatarTamanhoArquivo(attachment.size) : ''}</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #6b7280;">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
+        </div>
+      `;
+    }
+  }
+
+  /* ======================================================
+   *  Envio de mensagens COM ARQUIVOS
+   * ====================================================== */
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const texto = input.value.trim();
+    
+    if (!texto && selectedFiles.length === 0) return;
+    if (!conversaAtual) return;
+
+    // Upload dos arquivos primeiro
+    let uploadedFiles = [];
+    if (selectedFiles.length > 0) {
+      uploadedFiles = await uploadArquivos();
+    }
+
+    socket.emit("send_message", {
+      room: salaAtual,
+      message: texto,
+      conversation_id: conversaAtual,
+      attachments: uploadedFiles
+    });
+
+    input.value = "";
+    selectedFiles = [];
+    filePreview.classList.add("hidden");
   });
+
+  /* ======================================================
+   *  Recebimento em tempo real
+   * ====================================================== */
+  socket.on("message", data => {
+    if (data.conversation_id === conversaAtual) {
+      renderMessage(data.user, data.msg, data.timestamp, data.attachments);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    carregarConversas();
+  });
+
+  socket.on("update_conversations", () => carregarConversas());
+
+  socket.on("user_status_changed", (data) => {
+    console.log("👤 Status mudou:", data);
+    
+    atualizarStatusNaListaConversas(data.user_id, data.is_online);
+    
+    if (currentConversationUserId === data.user_id) {
+      const statusText = data.is_online ? "online" : "offline";
+      atualizarStatusHeader(data.is_online, statusText);
+    }
+    
+    if (!modal.classList.contains('hidden')) {
+      atualizarStatusNoModal(data.user_id, data.is_online);
+    }
+  });
+
+  /* ======================================================
+   *  Modal de Contatos COM STATUS EM TEMPO REAL
+   * ====================================================== */
+  btnContatos.addEventListener("click", () => abrirContatos());
+
+  function abrirContatos() {
+    modal.classList.remove("hidden");
+    listaContatos.innerHTML = `
+      <div class="estado-vazio" style="padding: 40px 20px;">
+        <div style="width: 24px; height: 24px; border: 2px solid #e5e7eb; border-top: 2px solid #16a34a; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+        <p>Carregando contatos...</p>
+      </div>
+    `;
+
+    fetch("/chat/usuarios")
+      .then(r => r.json())
+      .then(list => {
+        listaContatos.innerHTML = "";
+        
+        if (!list.length) {
+          listaContatos.innerHTML = `
+            <div class="estado-vazio" style="padding: 40px 20px;">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H16c-.8 0-1.54.37-2 1l-3 4v7h2v7h3v-7h1v7h3z"/>
+              </svg>
+              <h3>Nenhum contato</h3>
+              <p>Não há usuários disponíveis para conversar no momento</p>
+            </div>
+          `;
+          return;
+        }
+
+        list.forEach(u => {
+          const el = document.createElement("div");
+          el.className = "contato-item-moderno";
+          el.dataset.userId = u.id;
+          
+          const inicialNome = u.nome ? u.nome[0].toUpperCase() : '?';
+          const corAvatar = gerarCorAvatar(u.nome || 'Unknown');
+          const isOnline = u.is_online || false;
+          
+          el.innerHTML = `
+            <div class="avatar-with-status">
+              <div class="contato-avatar" style="background-color: ${corAvatar}">
+                ${inicialNome}
+              </div>
+              <div class="status-indicator ${isOnline ? 'online' : 'offline'}"></div>
+            </div>
+            <div class="contato-info">
+              <div class="contato-nome">${u.nome}</div>
+              <div class="contato-cargo">
+                <span class="status-text ${isOnline ? 'online' : 'offline'}">
+                  ${isOnline ? '● Online' : '○ Offline'}
+                </span>
+                • ${u.role ? u.role.replace('_', ' ').toUpperCase() : 'USUÁRIO'}
+              </div>
+            </div>
+          `;
+          
+          el.addEventListener("click", () => iniciarConversa(u.id, u.nome));
+          listaContatos.appendChild(el);
+        });
+      })
+      .catch(err => {
+        console.error("❌ Erro ao carregar contatos:", err);
+      });
+  }
+
+  window.fecharContatos = () => modal.classList.add("hidden");
+
+  function iniciarConversa(targetId, nome) {
+    fetch(`/chat/conversa/${targetId}`, { method: "POST" })
+      .then(r => r.json())
+      .then(data => {
+        fecharContatos();
+        abrirConversa(data.conversation_id, data.room, nome);
+        carregarConversas();
+      })
+      .catch(err => console.error("❌ Erro ao iniciar conversa:", err));
+  }
+
+  // Fechar modal clicando fora
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      fecharContatos();
+    }
+  });
+
+  // Animação de rotação para loading
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  /* ======================================================
+   *  Eventos de conexão SocketIO COM STATUS
+   * ====================================================== */
+  socket.on("connect", () => {
+    console.log("⚡ Socket conectado ao servidor");
+    iniciarHeartbeat();
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔌 Socket desconectado");
+    pararHeartbeat();
+  });
+
+  window.addEventListener("beforeunload", () => {
+    pararHeartbeat();
+  });
+});
 </script>
 {% endblock %}

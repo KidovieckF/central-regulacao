@@ -393,3 +393,37 @@ def editar_paciente(paciente_id: int):
         unidades=unidades,
         next_url=next_url,
     )
+
+@reception_bp.route("/acompanhamento", methods=["GET", "POST"])
+def acompanhar_pedido():
+    """Consulta pública para acompanhamento de pedidos por CPF"""
+    pedidos_paciente = []
+    cpf_consulta = None
+    
+    if request.method == "POST":
+        cpf_consulta = (request.form.get("cpf") or "").strip()
+        
+        if not cpf_consulta:
+            flash("Informe o CPF para consulta.", "warning")
+        elif len(cpf_consulta) != 11 or not cpf_consulta.isdigit():
+            flash("CPF deve conter exatamente 11 dígitos.", "danger")
+        else:
+            # Buscar paciente pelo CPF
+            paciente = pacientes_repo.obter_por_cpf(cpf_consulta)
+            
+            if not paciente:
+                flash("Nenhum pedido encontrado para este CPF.", "info")
+            else:
+                # Buscar todos os pedidos do paciente
+                pedidos_paciente = pedidos_repo.listar_por_paciente(paciente["id"])
+                
+                # Para cada pedido, buscar o histórico
+                for pedido in pedidos_paciente:
+                    pedido["historico"] = pedidos_repo.obter_historico(pedido["id"])
+                    pedido["horario_exame"] = _to_time(pedido.get("horario_exame"))
+    
+    return render_template(
+        "reception/acompanhamento.html", 
+        pedidos=pedidos_paciente,
+        cpf_consulta=cpf_consulta
+    )

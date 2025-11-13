@@ -1,18 +1,221 @@
-{% extends "base.html" %}
-{% block title %}Login · Central de Regulação{% endblock %}
-{% block content %}
-<div class="max-w-md mx-auto bg-white shadow rounded-lg p-8">
-  <h1 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Acesso ao Sistema</h1>
-  <form method="post" class="space-y-4">
-    <div>
-      <label for="cpf" class="block text-sm font-medium text-slate-600">CPF</label>
-      <input type="text" id="cpf" name="cpf" required maxlength="14" class="mt-1 block w-full rounded border-slate-300 focus:border-sky-500 focus:ring-sky-500" placeholder="Somente números">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login · Central de Regulação</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        fontFamily: {
+          sans: ["Inter", "sans-serif"],
+        },
+        extend: {
+          colors: {
+            primario: {
+              50: "#EDF9F8",
+              100: "#D4F2EF",
+              200: "#A9E4DF", 
+              300: "#7FD6CF",
+              400: "#54C8BF",
+              500: "#2ABAAD",
+              600: "#219588",
+              700: "#187063",
+              800: "#0F4B3F",
+              900: "#07251A",
+            },
+          },
+        },
+      },
+    };
+  </script>
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      caret-color: #1f2937;
+    }
+    
+    input, textarea {
+      caret-color: #1f2937 !important;
+    }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+  
+  <!-- Card de Login - 20% da tela -->
+  <div class="w-1/5 min-w-[400px] bg-white flex flex-col justify-center px-8 py-12">
+    <!-- Logo e Título -->
+    <div class="text-center mb-8">
+      <div class="flex justify-center mb-6">
+        <span class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primario-100 text-primario-700 shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5V6a3 3 0 013-3h4.5M21 10.5V18a3 3 0 01-3 3h-4.5M21 10.5h-6a3 3 0 01-3-3V3M3 13.5h6a3 3 0 013 3V21" />
+          </svg>
+        </span>
+      </div>
+      <h1 class="text-2xl font-bold text-slate-800 mb-2">Central de Regulação</h1>
+      <p class="text-slate-600 text-sm">Secretaria Municipal de Saúde</p>
     </div>
-    <div>
-      <label for="senha" class="block text-sm font-medium text-slate-600">Senha</label>
-      <input type="password" id="senha" name="senha" required class="mt-1 block w-full rounded border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+
+    <!-- Formulário de Login -->
+    <form method="post" class="space-y-6">
+      <!-- Campo CPF -->
+      <div>
+        <label for="cpf" class="block text-sm font-medium text-slate-700 mb-2">Usuário</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <input type="text" id="cpf" name="cpf" required maxlength="14" 
+                 class="block w-full pl-10 pr-3 py-3 text-base rounded-lg border border-slate-300 focus:border-primario-500 focus:ring-2 focus:ring-primario-200 outline-none" 
+                 placeholder="Digite seu CPF">
+        </div>
+      </div>
+
+      <!-- Campo Senha -->
+      <div>
+        <label for="senha" class="block text-sm font-medium text-slate-700 mb-2">Senha</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6-2h12m-6-8a3 3 0 00-3 3v1h6V9a3 3 0 00-3-3z"/>
+            </svg>
+          </div>
+          <input type="password" id="senha" name="senha" required 
+                 class="block w-full pl-10 pr-10 py-3 text-base rounded-lg border border-slate-300 focus:border-primario-500 focus:ring-2 focus:ring-primario-200 outline-none">
+          <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <svg id="eye-icon" class="h-5 w-5 text-slate-400 hover:text-slate-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Botão de Login -->
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm text-base">
+        Acessar
+      </button>
+    </form>
+
+    <!-- Links auxiliares -->
+    <div class="mt-8 text-center space-y-3">
+      <div class="text-center text-slate-400 text-sm">Ou</div>
+      <a href="/recepcao/acompanhamento" class="inline-flex items-center text-primario-600 hover:text-primario-700 text-sm font-medium">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        Acompanhar pedido de exame
+      </a>
     </div>
-    <button type="submit" class="w-full btn-primary">Entrar</button>
-  </form>
-</div>
-{% endblock %}
+
+    <!-- Rodapé do login -->
+    <div class="mt-12 text-center">
+      <p class="text-xs text-slate-500 mb-2">Sistema Desenvolvido Pela</p>
+      <p class="text-sm font-medium text-slate-600">Secretária de Saúde</p>
+      <p class="text-sm font-medium text-slate-600">Equipe de TI</p>
+      <p class="text-xs text-slate-400 mt-3">Versão 1.0.0</p>
+    </div>
+  </div>
+
+  <!-- Área direita - 80% da tela -->
+  <div class="flex-1 relative bg-gradient-to-br from-primario-500 via-primario-600 to-primario-800">
+    <!-- Overlay com padrão -->
+    <div class="absolute inset-0 bg-black opacity-10"></div>
+    <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><defs><pattern id=&quot;medical&quot; width=&quot;50&quot; height=&quot;50&quot; patternUnits=&quot;userSpaceOnUse&quot;><circle cx=&quot;25&quot; cy=&quot;25&quot; r=&quot;1&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.1&quot;/><path d=&quot;M25 15v20M15 25h20&quot; stroke=&quot;%23ffffff&quot; stroke-width=&quot;0.5&quot; opacity=&quot;0.1&quot;/></pattern></defs><rect width=&quot;100&quot; height=&quot;100&quot; fill=&quot;url(%23medical)&quot;/></svg>'); opacity: 0.3;"></div>
+    
+    <!-- Conteúdo sobreposto -->
+    <div class="relative flex flex-col justify-center items-center h-full p-12 text-white text-center">
+      <!-- Ícone principal -->
+      <div class="mb-8">
+        <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm mb-6">
+          <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-8 2h2v4h4v2h-4v4h-2v-4H7v-2h4V5z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Textos principais -->
+      <h2 class="text-4xl font-bold mb-4">SAÚDE</h2>
+      <h3 class="text-xl font-medium text-primario-100 mb-8">ATENÇÃO PRIMÁRIA</h3>
+      
+      <!-- Card de informações -->
+      <div class="max-w-md bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-md border border-white border-opacity-20">
+        <h4 class="text-lg font-semibold mb-3">Sistema de Regulação</h4>
+        <p class="text-sm text-primario-50 leading-relaxed">
+          Plataforma integrada para gerenciamento de pedidos de exames, 
+          regulação médica e agendamentos da atenção primária à saúde.
+        </p>
+      </div>
+
+      <!-- Informações do sistema 
+      <div class="mt-12 text-primario-100 text-sm">
+        <p>Descubra mais sobre o</p>
+        <p class="font-semibold">e-SUS APS e o PEC</p>
+        <div class="mt-4 text-xs text-primario-200">
+        </div>-->
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash messages (se houver) -->
+  {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+      <div class="fixed top-4 right-4 z-50 space-y-2">
+        {% for category, message in messages %}
+          {% set classes = 'bg-red-100 border-red-500 text-red-700' if category == 'danger' else 'bg-blue-100 border-blue-500 text-blue-700' %}
+          <div class="{{ classes }} border-l-4 p-4 rounded shadow-lg max-w-md">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <script>
+  // Máscara para CPF
+  document.addEventListener('DOMContentLoaded', function() {
+    const cpfInput = document.getElementById('cpf');
+    
+    if (cpfInput) {
+      cpfInput.addEventListener('input', function(e) {
+        let valor = e.target.value.replace(/\D/g, '');
+        
+        if (valor.length > 11) {
+          valor = valor.slice(0, 11);
+        }
+        
+        e.target.value = valor;
+      });
+
+      cpfInput.closest('form').addEventListener('submit', function() {
+        cpfInput.value = cpfInput.value.replace(/\D/g, '');
+      });
+    }
+  });
+
+  // Toggle senha
+  function togglePassword() {
+    const senhaInput = document.getElementById('senha');
+    const eyeIcon = document.getElementById('eye-icon');
+    
+    if (senhaInput.type === 'password') {
+      senhaInput.type = 'text';
+      eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>`;
+    } else {
+      senhaInput.type = 'password';
+      eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+    }
+  }
+  </script>
+</body>
+</html>

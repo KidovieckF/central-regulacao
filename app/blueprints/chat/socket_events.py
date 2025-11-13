@@ -1,12 +1,75 @@
-from flask_socketio import emit
-from flask_socketio import join_room
+from flask_socketio import emit, join_room
 from flask_login import current_user
 from app.extensions import socketio, mysql
+from datetime import datetime
+import json
 
+@socketio.on('connect')
+def on_connect():
+    if current_user.is_authenticated:
+        try:
+            with mysql.get_cursor() as (conn, cursor):
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET is_online = TRUE, last_seen = %s 
+                    WHERE id = %s
+                """, (datetime.now(), current_user.id))
+                conn.commit()
+            
+            emit('user_status_changed', {
+                'user_id': current_user.id,
+                'user_name': current_user.nome,
+                'is_online': True,
+                'event': 'connected'
+            }, broadcast=True, include_self=False)
+            
+            print(f"✅ {current_user.nome} ficou online")
+        except Exception as e:
+            print(f"❌ Erro ao marcar como online: {e}")
 
-@socketio.on('join')
+@socketio.on('disconnect')
+def on_disconnect():
+    if current_user.is_authenticated:
+        try:
+            with mysql.get_cursor() as (conn, cursor):
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET is_online = FALSE, last_seen = %s 
+                    WHERE id = %s
+                """, (datetime.now(), current_user.id))
+                conn.commit()
+            
+            emit('user_status_changed', {
+                'user_id': current_user.id,
+                'user_name': current_user.nome,
+                'is_online': False,
+                'event': 'disconnected'
+            }, broadcast=True)
+            
+            print(f"❌ {current_user.nome} ficou offline")
+        except Exception as e:
+            print(f"❌ Erro ao marcar como offline: {e}")
+
+@socketio.on('heartbeat')
+def on_heartbeat():
+    if current_user.is_authenticated:
+        try:
+            with mysql.get_cursor() as (conn, cursor):
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET last_seen = %s 
+                    WHERE id = %s
+                """, (datetime.now(), current_user.id))
+                conn.commit()
+        except Exception as e:
+            print(f"❌ Erro no heartbeat: {e}")
+
+@socketio.on("join")
 def handle_join(data):
-    room = data.get('room')
+    room = data.get("room")
+    if not room:
+        print("⚠️ Evento JOIN sem room.")
+        return
     join_room(room)
     print(f"👥 {current_user.nome if current_user.is_authenticated else 'Anônimo'} entrou na sala {room}")
 
@@ -14,55 +77,91 @@ def handle_join(data):
 def handle_send_message(data):
     print("📩 Evento send_message recebido:", data)
     try:
-        room = data.get("room", "geral")
-        message_text = data.get("message", "").strip()
+        room = data.get("room")
+        conversation_id = data.get("conversation_id")
+        message_text = (data.get("message") or "").strip()
+        attachments = data.get("attachments", [])  # ✅ ADICIONADO
 
-        if not message_text:
-            print("⚠️ Mensagem vazia.")
+        if not room or not conversation_id or (not message_text and not attachments):
+            print("⚠️ Dados incompletos para enviar mensagem.")
             return
 
-        # ✅ usa o contexto do pool corretamente
+        user_id = current_user.id if current_user.is_authenticated else None
+        user_name = current_user.nome if current_user.is_authenticated else "Anônimo"
+
+        # Salvar mensagem + anexos no banco
         with mysql.get_cursor(dictionary=True) as (conn, cursor):
-            # Verifica se sala existe
-            cursor.execute("SELECT id FROM conversations WHERE room = %s", (room,))
-            conversation = cursor.fetchone()
-
-            if not conversation:
-                cursor.execute(
-                    "INSERT INTO conversations (room, created_at) VALUES (%s, NOW())",
-                    (room,),
-                )
-                conversation_id = cursor.lastrowid
-                print(f"💬 Nova conversa criada: {conversation_id}")
-            else:
-                conversation_id = conversation["id"]
-
-            # Insere mensagem
             cursor.execute(
                 """
                 INSERT INTO messages (conversation_id, user_id, message, created_at)
                 VALUES (%s, %s, %s, NOW())
                 """,
-                (
-                    conversation_id,
-                    current_user.id if current_user.is_authenticated else 1,
-                    message_text,
-                ),
+                (conversation_id, user_id, message_text or ""),
             )
+            
+            message_id = cursor.lastrowid
+            
+            # ✅ SALVAR ANEXOS NO BANCO
+            saved_attachments = []
+            if attachments:
+                for attachment in attachments:
+                    cursor.execute("""
+                        INSERT INTO attachments (message_id, original_filename, stored_filename, mime_type, size, created_at)
+                        VALUES (%s, %s, %s, %s, %s, NOW())
+                    """, (
+                        message_id,
+                        attachment.get('original_name', attachment.get('filename')),
+                        attachment['filename'],
+                        attachment.get('type', attachment.get('mime_type')),
+                        attachment.get('size', 0)
+                    ))
+                    
+                    saved_attachments.append({
+                        'id': cursor.lastrowid,
+                        'original_filename': attachment.get('original_name', attachment.get('filename')),
+                        'stored_filename': attachment['filename'],
+                        'mime_type': attachment.get('type', attachment.get('mime_type')),
+                        'size': attachment.get('size', 0)
+                    })
+            
+            # Atualizar last_seen do usuário
+            if current_user.is_authenticated:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET last_seen = %s 
+                    WHERE id = %s
+                """, (datetime.now(), current_user.id))
+            
+            conn.commit()
 
-        print(f"✅ Mensagem salva no banco: {message_text}")
+        print(f"✅ Mensagem salva na conversa {conversation_id} por {user_name}")
 
-        # Emite a mensagem para todos conectados
+        # ✅ EMITIR MENSAGEM COM ANEXOS
         emit(
             "message",
             {
-                "user": current_user.nome
-                if current_user.is_authenticated
-                else "Anônimo",
+                "conversation_id": conversation_id,
+                "room": room,
+                "user": user_name,
                 "msg": message_text,
+                "attachments": saved_attachments,  # ✅ INCLUIR ANEXOS
+                "timestamp": datetime.now().isoformat(),
+            },
+            room=room,
+        )
+
+        # Atualizar preview da sidebar
+        preview_text = message_text or f"📎 {len(saved_attachments)} arquivo(s)"
+        emit(
+            "update_conversations",
+            {
+                "conversation_id": conversation_id,
+                "last_message": preview_text,
+                "sender": user_name,
             },
             broadcast=True,
         )
 
     except Exception as e:
-        print("❌ Erro ao processar mensagem:", e)
+        print(f"❌ Erro ao processar mensagem: {e}")
+        emit("error", {"error": str(e)})
