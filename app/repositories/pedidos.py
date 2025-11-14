@@ -179,6 +179,7 @@ def listar_para_agendador(
     mes: Optional[int] = None,
     prioridade: Optional[str] = None
 ) -> List[dict]:
+
     if tipo_regulacao not in ("municipal", "estadual"):
         return []
 
@@ -190,6 +191,7 @@ def listar_para_agendador(
         StatusPedido.AGENDAMENTO_EM_ANDAMENTO.value,
     )
 
+    # 👉 SELECT unificado: traz exame OU consulta
     query = """
         SELECT 
             p.id,
@@ -200,13 +202,20 @@ def listar_para_agendador(
             p.horario_exame,
             p.local_exame,
             p.prioridade,
-            p.tipo_solicitacao,
+
             pa.nome AS paciente_nome,
             pa.cpf AS paciente_cpf,
             pa.telefone_principal,
             pa.telefone_secundario,
-            COALESCE(e.nome, c.especialidade) AS nome_solicitacao,
+
+            p.exame_id,
+            e.nome AS exame_nome,
+
+            p.consulta_id,
+            c.nome AS consulta_nome,
+
             un.nome AS unidade_nome
+
         FROM pedidos p
         JOIN pacientes pa ON pa.id = p.paciente_id
         LEFT JOIN exames e ON e.id = p.exame_id
@@ -215,6 +224,7 @@ def listar_para_agendador(
         WHERE p.status IN (%s, %s)
           AND p.tipo_regulacao = %s
     """
+
     params = [status_validos[0], status_validos[1], tipo_regulacao]
 
     if ano:

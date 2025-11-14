@@ -14,31 +14,32 @@ from . import scheduling_bp
 @scheduling_bp.route("/<tipo>")
 @login_required
 def lista(tipo: str):
-    """Página principal de agendamento (municipal/estadual) com filtros."""
+
     if tipo not in ("municipal", "estadual"):
         abort(404)
 
-    # Verificação de permissão
     papel_necessario = "agendador_municipal" if tipo == "municipal" else "agendador_estadual"
     if current_user.role not in (papel_necessario, "admin"):
         abort(403)
 
-    # --------------------------
-    # 🔹 Captura dos filtros GET
-    # --------------------------
+    # Filtros
     ano = request.args.get("ano", type=int)
     mes = request.args.get("mes", type=int)
     prioridade = request.args.get("prioridade", type=str)
 
+    # Buscar todos os pedidos do tipo
+    pedidos = pedidos_repo.listar_para_agendador(
+        tipo,
+        ano=ano,
+        mes=mes,
+        prioridade=prioridade
+    )
 
-    # --------------------------
-    # 🔹 Obtenção de dados filtrados
-    # --------------------------
-    pedidos = pedidos_repo.listar_para_agendador(tipo, ano=ano, mes=mes, prioridade=prioridade)
+    # 🔥 SEPARAÇÃO FINAL
+    exames = [p for p in pedidos if p.get("exame_id")]
+    consultas = [p for p in pedidos if p.get("consulta_id")]
 
-    # --------------------------
-    # 🔹 Dados auxiliares para os selects
-    # --------------------------
+    # Anos / meses
     ano_atual = datetime.now().year
     anos_disponiveis = [ano_atual - 2, ano_atual - 1, ano_atual, ano_atual + 1]
 
@@ -48,13 +49,11 @@ def lista(tipo: str):
         (9, "Setembro"), (10, "Outubro"), (11, "Novembro"), (12, "Dezembro"),
     ]
 
-    # --------------------------
-    # 🔹 Renderização
-    # --------------------------
     template = f"scheduling/{tipo}.html"
     return render_template(
         template,
-        pedidos=pedidos,
+        exames=exames,
+        consultas=consultas,   # 👈 agora o template recebe as duas listas
         tipo=tipo,
         anos_disponiveis=anos_disponiveis,
         meses=meses,
