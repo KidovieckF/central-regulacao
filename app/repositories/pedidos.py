@@ -4,20 +4,24 @@ from app.extensions import mysql
 
 
 # ==========================================================
-# 🧾 Criar Pedido (Exame ou Consulta)
+# 🧾 Criar Pedido (Exame ou Consulta) - CORRIGIDO
 # ==========================================================
 def criar_pedido(dados: dict) -> int:
+    # Determinar tipo de solicitação baseado nos IDs
+    tipo_solicitacao = 'consulta' if dados.get("consulta_id") else 'exame'
+    
     query = """
         INSERT INTO pedidos
-        (paciente_id, exame_id, consulta_id, unidade_id, status, tipo_regulacao, prioridade,
+        (paciente_id, exame_id, consulta_id, unidade_id, tipo_solicitacao, status, tipo_regulacao, prioridade,
          usuario_criacao, usuario_atualizacao, observacoes, pendente_recepcao)
-        VALUES (%s, %s, %s, %s, %s, NULL, NULL, %s, %s, %s, 0)
+        VALUES (%s, %s, %s, %s, %s, %s, NULL, NULL, %s, %s, %s, 0)
     """
     valores = (
         dados["paciente_id"],
         dados.get("exame_id"),
         dados.get("consulta_id"),
         dados["unidade_id"],
+        tipo_solicitacao,  # ✅ ADICIONAR TIPO_SOLICITACAO
         StatusPedido.AGUARDANDO_TRIAGEM.value,
         dados["usuario_criacao"],
         dados["usuario_criacao"],
@@ -55,6 +59,7 @@ def obter_por_id(pedido_id: int) -> Optional[dict]:
                pa.data_nascimento,
                e.nome AS exame_nome,
                c.nome AS consulta_nome,
+               c.especialidade AS consulta_especialidade,
                un.nome AS unidade_nome
         FROM pedidos p
         JOIN pacientes pa ON pa.id = p.paciente_id
@@ -77,11 +82,12 @@ def listar_por_unidade(unidade_id: int) -> List[dict]:
                p.status,
                p.tipo_regulacao,
                p.prioridade,
+               p.tipo_solicitacao,
                p.data_solicitacao,
                p.pendente_recepcao,
                pa.nome AS paciente_nome,
                pa.cpf AS paciente_cpf,
-               COALESCE(e.nome, c.nome) AS nome_solicitacao
+               COALESCE(e.nome, c.especialidade) AS nome_solicitacao
         FROM pedidos p
         JOIN pacientes pa ON pa.id = p.paciente_id
         LEFT JOIN exames e ON e.id = p.exame_id
@@ -95,7 +101,7 @@ def listar_por_unidade(unidade_id: int) -> List[dict]:
 
 
 # ==========================================================
-# 📦 Listar para Malote
+# 📦 Listar para Malote - ATUALIZADO
 # ==========================================================
 def listar_para_malote() -> List[dict]:
     query = """
@@ -103,11 +109,12 @@ def listar_para_malote() -> List[dict]:
                p.status,
                p.prioridade,
                p.tipo_regulacao,
+               p.tipo_solicitacao,
                p.data_solicitacao,
                un.nome AS unidade_nome,
                pa.nome AS paciente_nome,
                pa.cpf AS paciente_cpf,
-               COALESCE(e.nome, c.nome) AS nome_solicitacao
+               COALESCE(e.nome, c.especialidade) AS nome_solicitacao
         FROM pedidos p
         JOIN pacientes pa ON pa.id = p.paciente_id
         LEFT JOIN exames e ON e.id = p.exame_id
@@ -142,11 +149,12 @@ def listar_para_medico(tipo_regulacao: str) -> List[dict]:
         SELECT p.id,
                p.prioridade,
                p.status,
+               p.tipo_solicitacao,
                p.motivo_devolucao,
                pa.nome AS paciente_nome,
                pa.cpf AS paciente_cpf,
                pa.telefone_principal,
-               COALESCE(e.nome, c.nome) AS nome_solicitacao,
+               COALESCE(e.nome, c.especialidade) AS nome_solicitacao,
                un.nome AS unidade_nome,
                p.data_solicitacao
         FROM pedidos p
@@ -192,11 +200,12 @@ def listar_para_agendador(
             p.horario_exame,
             p.local_exame,
             p.prioridade,
+            p.tipo_solicitacao,
             pa.nome AS paciente_nome,
             pa.cpf AS paciente_cpf,
             pa.telefone_principal,
             pa.telefone_secundario,
-            COALESCE(e.nome, c.nome) AS nome_solicitacao,
+            COALESCE(e.nome, c.especialidade) AS nome_solicitacao,
             un.nome AS unidade_nome
         FROM pedidos p
         JOIN pacientes pa ON pa.id = p.paciente_id
@@ -255,6 +264,7 @@ def listar_por_paciente(paciente_id: int) -> list[dict]:
             p.status,
             p.tipo_regulacao,
             p.prioridade,
+            p.tipo_solicitacao,
             p.data_solicitacao,
             p.data_atualizacao,
             p.data_exame,
@@ -265,7 +275,7 @@ def listar_por_paciente(paciente_id: int) -> list[dict]:
             p.motivo_devolucao,
             pac.nome as paciente_nome,
             pac.cpf as paciente_cpf,
-            COALESCE(e.nome, c.nome) as nome_solicitacao,
+            COALESCE(e.nome, c.especialidade) as nome_solicitacao,
             u.nome as unidade_nome,
             u_criacao.nome as usuario_criacao_nome
         FROM pedidos p

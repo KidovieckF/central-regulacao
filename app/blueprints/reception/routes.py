@@ -10,6 +10,7 @@ from app.repositories import pacientes as pacientes_repo
 from app.repositories import pedidos as pedidos_repo
 from app.repositories import exames as exames_repo
 from app.repositories import unidades as unidades_repo
+from app.repositories import consultas as consultas_repo
 from app.services.pedidos_service import atualizar_status, registrar_historico
 from app.utils.decorators import roles_required
 from . import reception_bp
@@ -139,12 +140,7 @@ def listar_pedidos():
 @roles_required("recepcao", "admin")
 def novo_pedido():
     exames = exames_repo.listar_exames()
-    # 🔹 futuramente poderá vir de uma tabela consultas
-    consultas = [
-        {"id": 1, "especialidade": "Cardiologia"},
-        {"id": 2, "especialidade": "Ortopedia"},
-        {"id": 3, "especialidade": "Dermatologia"},
-    ]
+    consultas = consultas_repo.listar_ativas()  # ✅ USAR BANCO EM VEZ DE HARDCODED
     unidades = unidades_repo.listar_unidades_ativas()
     dados_form = dict(request.form) if request.method == "POST" else {}
 
@@ -168,7 +164,7 @@ def novo_pedido():
         tipo_solicitacao = (request.form.get("tipo_solicitacao") or "exame").strip().lower()
         observacoes = (request.form.get("observacoes") or "").strip() or None
 
-        # 🔹 Dependendo do tipo, pegamos o ID certo
+        # Dependendo do tipo, pegamos o ID certo
         exame_id = None
         consulta_id = None
         erros = []
@@ -221,7 +217,7 @@ def novo_pedido():
                 dados_form=dados_form,
             )
 
-        # 🔹 Criação/atualização de paciente
+        # Criação/atualização de paciente
         paciente_existente = pacientes_repo.obter_por_cpf(paciente_data["cpf"])
         if paciente_existente:
             pacientes_repo.atualizar_paciente(paciente_existente["id"], paciente_data)
@@ -229,20 +225,25 @@ def novo_pedido():
         else:
             paciente_id = pacientes_repo.criar_paciente(paciente_data)
 
-        # 🔹 Criação do pedido
-        dados_pedido = {
-            "paciente_id": paciente_id,
-            "unidade_id": unidade_id,
-            "usuario_criacao": current_user.id,
-            "observacoes": observacoes,
-        }
-
+        # ✅ CRIAÇÃO DO PEDIDO CORRIGIDA
         if tipo_solicitacao == "exame":
-            dados_pedido["exame_id"] = exame_id
-        else:
-            # 🔹 opcionalmente: criar campo `consulta_id` na tabela pedidos
-            dados_pedido["exame_id"] = None
-            dados_pedido["observacoes"] = (observacoes or "") + f" [CONSULTA ID {consulta_id}]"
+            dados_pedido = {
+                "paciente_id": paciente_id,
+                "exame_id": exame_id,
+                "consulta_id": None,
+                "unidade_id": unidade_id,
+                "usuario_criacao": current_user.id,
+                "observacoes": observacoes,
+            }
+        else:  # consulta
+            dados_pedido = {
+                "paciente_id": paciente_id,
+                "exame_id": None,
+                "consulta_id": consulta_id,
+                "unidade_id": unidade_id,
+                "usuario_criacao": current_user.id,
+                "observacoes": observacoes,
+            }
 
         pedido_id = pedidos_repo.criar_pedido(dados_pedido)
 
@@ -258,16 +259,11 @@ def novo_pedido():
     return render_template(
         "reception/form.html",
         exames=exames,
-        consultas=[
-            {"id": 1, "especialidade": "Cardiologia"},
-            {"id": 2, "especialidade": "Ortopedia"},
-            {"id": 3, "especialidade": "Dermatologia"},
-        ],
+        consultas=consultas,  # ✅ USAR CONSULTAS DO BANCO
         unidades=unidades,
         unidade_atual=current_user.unidade_id,
         dados_form=dados_form,
     )
-
 
 
 @reception_bp.route("/pedidos/<int:pedido_id>")
@@ -434,6 +430,7 @@ def editar_paciente(paciente_id: int):
         unidades=unidades,
         next_url=next_url,
     )
+
 
 @reception_bp.route("/acompanhamento", methods=["GET", "POST"])
 def acompanhar_pedido():

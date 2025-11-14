@@ -45,135 +45,172 @@
     input, textarea {
       caret-color: #1f2937 !important;
     }
+
+    .login-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .login-card {
+      width: 400px;
+      min-width: 400px;
+      max-width: 500px;
+    }
+
+    .image-area {
+      flex: 1;
+      min-width: 0;
+    }
   </style>
 </head>
-<body class="h-screen flex overflow-hidden">
-  
-  <!-- Card de Login - 20% da tela -->
-  <div class="w-1/5 min-w-[400px] bg-white flex flex-col justify-center px-8 py-12">
-    <!-- Logo e Título -->
-    <div class="text-center mb-8">
-      <div class="flex justify-center mb-6">
-        <span class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primario-100 text-primario-700 shadow-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5V6a3 3 0 013-3h4.5M21 10.5V18a3 3 0 01-3 3h-4.5M21 10.5h-6a3 3 0 01-3-3V3M3 13.5h6a3 3 0 013 3V21" />
-          </svg>
-        </span>
-      </div>
-      <h1 class="text-2xl font-bold text-slate-800 mb-2">Central de Regulação</h1>
-      <p class="text-slate-600 text-sm">Secretaria Municipal de Saúde</p>
-    </div>
-
-    <!-- Formulário de Login -->
-    <form method="post" class="space-y-6">
-      <!-- Campo CPF -->
-      <div>
-        <label for="cpf" class="block text-sm font-medium text-slate-700 mb-2">Usuário</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+<body>
+  <div class="login-container">
+    <!-- Card de Login - Largura fixa -->
+    <div class="login-card bg-white flex flex-col justify-center px-8 py-12">
+      <!-- Logo e Título -->
+      <div class="text-center mb-8">
+        <div class="flex justify-center mb-6">
+          <span class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primario-100 text-primario-700 shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5V6a3 3 0 013-3h4.5M21 10.5V18a3 3 0 01-3 3h-4.5M21 10.5h-6a3 3 0 01-3-3V3M3 13.5h6a3 3 0 013 3V21" />
             </svg>
+          </span>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-800 mb-2">Central de Regulação</h1>
+        <p class="text-slate-600 text-sm">Secretaria Municipal de Saúde</p>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form method="post" class="space-y-6">
+        <!-- Campo CPF -->
+        <div>
+          <label for="cpf" class="block text-sm font-medium text-slate-700 mb-2">Usuário</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <input type="text" id="cpf" name="cpf" required maxlength="14" 
+                   class="block w-full pl-10 pr-3 py-3 text-base rounded-lg border border-slate-300 focus:border-primario-500 focus:ring-2 focus:ring-primario-200 outline-none" 
+                   placeholder="Digite seu CPF">
           </div>
-          <input type="text" id="cpf" name="cpf" required maxlength="14" 
-                 class="block w-full pl-10 pr-3 py-3 text-base rounded-lg border border-slate-300 focus:border-primario-500 focus:ring-2 focus:ring-primario-200 outline-none" 
-                 placeholder="Digite seu CPF">
         </div>
-      </div>
 
-      <!-- Campo Senha -->
-      <div>
-        <label for="senha" class="block text-sm font-medium text-slate-700 mb-2">Senha</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6-2h12m-6-8a3 3 0 00-3 3v1h6V9a3 3 0 00-3-3z"/>
-            </svg>
+        <!-- Campo Senha -->
+        <div>
+          <label for="senha" class="block text-sm font-medium text-slate-700 mb-2">Senha</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6-2h12m-6-8a3 3 0 00-3 3v1h6V9a3 3 0 00-3-3z"/>
+              </svg>
+            </div>
+            <input type="password" id="senha" name="senha" required 
+                   class="block w-full pl-10 pr-10 py-3 text-base rounded-lg border border-slate-300 focus:border-primario-500 focus:ring-2 focus:ring-primario-200 outline-none">
+            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <svg id="eye-icon" class="h-5 w-5 text-slate-400 hover:text-slate-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
           </div>
-          <input type="password" id="senha" name="senha" required 
-                 class="block w-full pl-10 pr-10 py-3 text-base rounded-lg border border-slate-300 focus:border-primario-500 focus:ring-2 focus:ring-primario-200 outline-none">
-          <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <svg id="eye-icon" class="h-5 w-5 text-slate-400 hover:text-slate-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-          </button>
         </div>
-      </div>
 
-      <!-- Botão de Login -->
-      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm text-base">
-        Acessar
-      </button>
-    </form>
+        <!-- Botão de Login -->
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm text-base">
+          Acessar
+        </button>
+      </form>
 
-    <!-- Links auxiliares -->
-    <div class="mt-8 text-center space-y-3">
-      <div class="text-center text-slate-400 text-sm">Ou</div>
-      <a href="/recepcao/acompanhamento" class="inline-flex items-center text-primario-600 hover:text-primario-700 text-sm font-medium">
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        Acompanhar pedido de exame
-      </a>
-    </div>
-
-    <!-- Rodapé do login -->
-    <div class="mt-12 text-center">
-      <p class="text-xs text-slate-500 mb-2">Sistema Desenvolvido Pela</p>
-      <p class="text-sm font-medium text-slate-600">Secretária de Saúde</p>
-      <p class="text-sm font-medium text-slate-600">Equipe de TI</p>
-      <p class="text-xs text-slate-400 mt-3">Versão 1.0.0</p>
-    </div>
-  </div>
-
-  <!-- Área direita - 80% da tela -->
-  <div class="flex-1 relative bg-gradient-to-br from-primario-500 via-primario-600 to-primario-800">
-    <!-- Overlay com padrão -->
-    <div class="absolute inset-0 bg-black opacity-10"></div>
-    <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><defs><pattern id=&quot;medical&quot; width=&quot;50&quot; height=&quot;50&quot; patternUnits=&quot;userSpaceOnUse&quot;><circle cx=&quot;25&quot; cy=&quot;25&quot; r=&quot;1&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.1&quot;/><path d=&quot;M25 15v20M15 25h20&quot; stroke=&quot;%23ffffff&quot; stroke-width=&quot;0.5&quot; opacity=&quot;0.1&quot;/></pattern></defs><rect width=&quot;100&quot; height=&quot;100&quot; fill=&quot;url(%23medical)&quot;/></svg>'); opacity: 0.3;"></div>
-    
-    <!-- Conteúdo sobreposto -->
-    <div class="relative flex flex-col justify-center items-center h-full p-12 text-white text-center">
-      <!-- Ícone principal -->
-      <div class="mb-8">
-        <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm mb-6">
-          <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-8 2h2v4h4v2h-4v4h-2v-4H7v-2h4V5z"/>
+      <!-- Links auxiliares -->
+      <div class="mt-8 text-center space-y-3">
+        <div class="text-center text-slate-400 text-sm">Ou</div>
+        <a href="/recepcao/acompanhamento" class="inline-flex items-center text-primario-600 hover:text-primario-700 text-sm font-medium">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
-        </div>
+          Acompanhar pedido de exame
+        </a>
       </div>
 
-      <!-- Textos principais -->
-      <h2 class="text-4xl font-bold mb-4">SAÚDE</h2>
-      <h3 class="text-xl font-medium text-primario-100 mb-8">ATENÇÃO PRIMÁRIA</h3>
+      <!-- Rodapé do login -->
+      <div class="mt-12 text-center">
+        <p class="text-xs text-slate-500 mb-2">Sistema Desenvolvido Pela</p>
+        <p class="text-sm font-medium text-slate-600">Secretaria de Saúde</p>
+        <p class="text-sm font-medium text-slate-600">Equipe de TI</p>
+        <p class="text-xs text-slate-400 mt-3">Versão 1.0.0</p>
+      </div>
+    </div>
+
+    <!-- Área direita - Centralized -->
+    <div class="image-area bg-gradient-to-br from-primario-500 via-primario-600 to-primario-800 relative">
+      <!-- Overlay com padrão médico -->
+      <div class="absolute inset-0 bg-black opacity-10"></div>
+      <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><defs><pattern id=&quot;medical&quot; width=&quot;50&quot; height=&quot;50&quot; patternUnits=&quot;userSpaceOnUse&quot;><circle cx=&quot;25&quot; cy=&quot;25&quot; r=&quot;1&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.1&quot;/><path d=&quot;M25 15v20M15 25h20&quot; stroke=&quot;%23ffffff&quot; stroke-width=&quot;0.5&quot; opacity=&quot;0.1&quot;/></pattern></defs><rect width=&quot;100&quot; height=&quot;100&quot; fill=&quot;url(%23medical)&quot;/></svg>'); opacity: 0.3;"></div>
       
-      <!-- Card de informações -->
-      <div class="max-w-md bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-md border border-white border-opacity-20">
-        <h4 class="text-lg font-semibold mb-3">Sistema de Regulação</h4>
-        <p class="text-sm text-primario-50 leading-relaxed">
-          Plataforma integrada para gerenciamento de pedidos de exames, 
-          regulação médica e agendamentos da atenção primária à saúde.
-        </p>
-      </div>
+      <!-- Conteúdo bem centralizado -->
+      <div class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-12">
+        <!-- Ícone principal -->
+        <div class="mb-8">
+          <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm mb-6 shadow-2xl">
+            <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-8 2h2v4h4v2h-4v4h-2v-4H7v-2h4V5z"/>
+            </svg>
+          </div>
+        </div>
 
-      <!-- Informações do sistema 
-      <div class="mt-12 text-primario-100 text-sm">
-        <p>Descubra mais sobre o</p>
-        <p class="font-semibold">e-SUS APS e o PEC</p>
-        <div class="mt-4 text-xs text-primario-200">
-        </div>-->
+        <!-- Textos principais -->
+        <h2 class="text-5xl font-bold mb-4 tracking-wider">SAÚDE</h2>
+        <h3 class="text-xl font-medium text-primario-100 mb-12 tracking-wide">ATENÇÃO PRIMÁRIA</h3>
+        
+        <!-- Card de informações centralizado -->
+        <div class="max-w-lg bg-white bg-opacity-15 rounded-xl p-8 backdrop-blur-md border border-white border-opacity-20 shadow-xl">
+          <h4 class="text-xl font-semibold mb-4">Sistema de Regulação</h4>
+          <p class="text-base text-primario-50 leading-relaxed">
+            Plataforma integrada para gerenciamento de pedidos de exames, 
+            regulação médica e agendamentos da atenção primária à saúde.
+          </p>
+        </div>
+
+        <!-- Indicadores visuais -->
+        <div class="mt-16 flex items-center justify-center gap-12">
+          <div class="text-center">
+            <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto">
+              <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l.09 8.26L22 12l-9.91 1.74L12 22l-.09-8.26L2 12l9.91-1.74L12 2z"/>
+              </svg>
+            </div>
+            <p class="text-sm text-primario-200">Regulação</p>
+          </div>
+          <div class="text-center">
+            <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto">
+              <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3h4v2h-4V6zm0 4h4v2h-4v-2zM6 6h4v2H6V6zm0 4h4v2H6v-2zm0 4h8v2H6v-2z"/>
+              </svg>
+            </div>
+            <p class="text-sm text-primario-200">Agendamentos</p>
+          </div>
+          <div class="text-center">
+            <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 mx-auto">
+              <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
+              </svg>
+            </div>
+            <p class="text-sm text-primario-200">Relatórios</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Flash messages (se houver) -->
+  <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=True) %}
     {% if messages %}
       <div class="fixed top-4 right-4 z-50 space-y-2">
         {% for category, message in messages %}
           {% set classes = 'bg-red-100 border-red-500 text-red-700' if category == 'danger' else 'bg-blue-100 border-blue-500 text-blue-700' %}
-          <div class="{{ classes }} border-l-4 p-4 rounded shadow-lg max-w-md">
+          <div class="{{ classes }} border-l-4 p-4 rounded shadow-lg max-w-sm">
             {{ message }}
           </div>
         {% endfor %}
@@ -201,6 +238,31 @@
         cpfInput.value = cpfInput.value.replace(/\D/g, '');
       });
     }
+
+    // Ajuste responsivo
+    function ajustarLayout() {
+      const container = document.querySelector('.login-container');
+      const imageArea = document.querySelector('.image-area');
+      
+      if (window.innerWidth < 1024) {
+        // Mobile: ocultar área da imagem
+        if (imageArea) {
+          imageArea.style.display = 'none';
+        }
+        if (container) {
+          container.style.justifyContent = 'center';
+        }
+      } else {
+        // Desktop: mostrar área da imagem
+        if (imageArea) {
+          imageArea.style.display = 'block';
+        }
+      }
+    }
+
+    // Ajustar no carregamento e redimensionamento
+    ajustarLayout();
+    window.addEventListener('resize', ajustarLayout);
   });
 
   // Toggle senha
@@ -217,5 +279,31 @@
     }
   }
   </script>
+
+  <style>
+  /* Media queries para responsividade */
+  @media (max-width: 1023px) {
+    .login-container {
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #2ABAAD 0%, #187063 100%);
+    }
+    
+    .login-card {
+      width: 90%;
+      max-width: 400px;
+      margin: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .login-card {
+      margin: 1rem;
+      padding: 1.5rem;
+    }
+  }
+  </style>
 </body>
 </html>
