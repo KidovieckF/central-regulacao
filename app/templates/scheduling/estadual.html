@@ -1,6 +1,76 @@
 {% extends "base.html" %}
 {% block title %}Agendamento Cross / Estadual{% endblock %}
+
 {% block content %}
 <h1 class="text-2xl font-semibold text-slate-700 mb-6">Agendamento Cross / Estadual</h1>
-{% include "scheduling/partials/lista.html" %}
+
+<!-- Abas -->
+<div class="border-b border-gray-200 mb-4">
+	<ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+
+		<li class="me-2">
+			<button
+				class="inline-block p-4 border-b-2 rounded-t-lg active-tab"
+				id="tab-exames"
+				data-tab-target="exames">
+				Exames
+			</button>
+		</li>
+
+		<li class="me-2">
+			<button
+				class="inline-block p-4 border-b-2 rounded-t-lg text-gray-500 hover:text-gray-600"
+				id="tab-consultas"
+				data-tab-target="consultas">
+				Consultas
+			</button>
+		</li>
+
+	</ul>
+</div>
+
+<!-- Conteúdo -->
+<div id="tab-content">
+
+	<!-- EXAMES -->
+	<div id="tab-exames-content" class="tab-pane block">
+		{% set pedidos = exames %}
+		{% include "scheduling/partials/lista.html" with context %}
+	</div>
+
+	<!-- CONSULTAS -->
+	<div id="tab-consultas-content" class="tab-pane hidden">
+		{% include "scheduling/partials/lista_consultas.html" with context %}
+	</div>
+
+</div>
+
+<!-- Abas script -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+	const tabs = document.querySelectorAll("[data-tab-target]");
+	const panes = document.querySelectorAll(".tab-pane");
+
+	tabs.forEach(tab => {
+		tab.addEventListener("click", () => {
+
+			// reset
+			tabs.forEach(t => t.classList.remove("active-tab", "border-blue-500", "text-blue-600"));
+			panes.forEach(p => p.classList.add("hidden"));
+
+			// ativa
+			tab.classList.add("active-tab", "border-blue-500", "text-blue-600");
+			document.getElementById(`tab-${tab.dataset.tabTarget}-content`).classList.remove("hidden");
+		});
+	});
+});
+</script>
+
+<style>
+	.active-tab {
+		color: #2563eb;
+		border-color: #2563eb;
+	}
+</style>
+
 {% endblock %}
