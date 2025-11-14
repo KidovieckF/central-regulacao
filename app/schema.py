@@ -60,11 +60,23 @@ SCHEMA_STATEMENTS = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
+    CREATE TABLE IF NOT EXISTS consultas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nome VARCHAR(150) NOT NULL,
+        especialidade VARCHAR(150) NOT NULL,
+        descricao TEXT,
+        ativo TINYINT(1) DEFAULT 1,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
     CREATE TABLE IF NOT EXISTS pedidos (
         id INT AUTO_INCREMENT PRIMARY KEY,
         paciente_id INT NOT NULL,
-        exame_id INT NOT NULL,
+        exame_id INT NULL,
+        consulta_id INT NULL,
         unidade_id INT NOT NULL,
+        tipo_solicitacao ENUM('exame', 'consulta') DEFAULT 'exame',
         status VARCHAR(64) NOT NULL,
         tipo_regulacao ENUM('municipal', 'estadual') NULL,
         prioridade ENUM('P1', 'P2') NULL,
@@ -83,9 +95,14 @@ SCHEMA_STATEMENTS = [
         tentativas_contato INT DEFAULT 0,
         FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
         FOREIGN KEY (exame_id) REFERENCES exames(id),
+        FOREIGN KEY (consulta_id) REFERENCES consultas(id),
         FOREIGN KEY (unidade_id) REFERENCES unidades_saude(id),
         FOREIGN KEY (usuario_criacao) REFERENCES usuarios(id),
-        FOREIGN KEY (usuario_atualizacao) REFERENCES usuarios(id)
+        FOREIGN KEY (usuario_atualizacao) REFERENCES usuarios(id),
+        CONSTRAINT chk_exame_ou_consulta CHECK (
+            (exame_id IS NOT NULL AND consulta_id IS NULL) OR 
+            (exame_id IS NULL AND consulta_id IS NOT NULL)
+        )
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
@@ -115,12 +132,12 @@ SCHEMA_STATEMENTS = [
     """,
 
     # -------------------------------------------------------------------------
-    # Módulo de CHAT — alinhado ao backend e templates
+    # Módulo de CHAT
     # -------------------------------------------------------------------------
     """
     CREATE TABLE IF NOT EXISTS conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        room VARCHAR(100) NOT NULL,          -- nome único da sala
+        room VARCHAR(100) NOT NULL,
         name VARCHAR(200),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
