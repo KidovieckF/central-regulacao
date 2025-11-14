@@ -20,71 +20,78 @@
   </div>
 
   {% if pedidos %}
-    <!-- Cabeçalho da tabela -->
-    <div class="bg-slate-50 rounded-lg p-3 grid grid-cols-12 gap-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">
-      <div class="col-span-1">#</div>
-      <div class="col-span-3">Paciente & Exame</div>
-      <div class="col-span-2">Unidade</div>
-      <div class="col-span-2">Data/Prioridade</div>
-      <div class="col-span-4">Ações</div>
-    </div>
-
-    <!-- Lista de pedidos compacta -->
-    <div class="space-y-2">
-      {% for pedido in pedidos %}
-        <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
-          <div class="grid grid-cols-12 gap-3 items-center">
-            <!-- ID -->
-            <div class="col-span-1">
-              <span class="text-lg font-bold text-primario-600">#{{ pedido.id }}</span>
-            </div>
-            
-            <!-- Paciente & Exame -->
-            <div class="col-span-3">
-              <div class="font-semibold text-slate-700">{{ pedido.paciente_nome }}</div>
-              <div class="text-sm text-slate-500">{{ pedido.exame_nome }}</div>
-            </div>
-            
-            <!-- Unidade -->
-            <div class="col-span-2">
-              <div class="text-sm text-slate-600">{{ pedido.unidade_nome }}</div>
-            </div>
-            
-            <!-- Data e Prioridade -->
-            <div class="col-span-2">
-              <div class="text-xs text-slate-500">
-                {{ pedido.data_solicitacao.strftime("%d/%m/%Y") if pedido.data_solicitacao }}
-              </div>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ 'bg-red-100 text-red-800' if pedido.prioridade == 'P1' else 'bg-yellow-100 text-yellow-800' }}">
-                {{ pedido.prioridade }}
-              </span>
-            </div>
-            
-            <!-- Ações compactas -->
-            <div class="col-span-4 flex gap-2">
-              <!-- Aprovar -->
-              <form method="post" action="{{ url_for('regulator.aprovar', pedido_id=pedido.id) }}" class="flex-1">
-                <input type="hidden" name="tipo_regulacao" value="{{ tipo }}">
-                <button type="submit" class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors">
-                  ✓ Aprovar
-                </button>
-              </form>
-              
-              <!-- Devolver -->
-              <button type="button" onclick="abrirModalDevolver('{{ pedido.id }}', '{{ tipo }}')" 
-                      class="flex-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition-colors">
-                ↵ Devolver
-              </button>
-              
-              <!-- Cancelar -->
-              <button type="button" onclick="abrirModalCancelar('{{ pedido.id }}')" 
-                      class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors">
-                ✕ Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">#</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Paciente</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Solicitação</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Unidade</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Prioridade</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          {% for pedido in pedidos %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <span class="text-lg font-bold text-primario-600">#{{ pedido.id }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="text-sm font-medium text-slate-700">{{ pedido.paciente_nome }}</div>
+                <div class="text-xs text-slate-500">{{ pedido.paciente_cpf }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2 mb-1">
+                  {% if pedido.tipo_solicitacao == 'exame' %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      🔬 Exame
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      👩‍⚕️ Consulta
+                    </span>
+                  {% endif %}
+                </div>
+                <div class="text-sm text-slate-600">{{ pedido.nome_solicitacao }}</div>
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-600">{{ pedido.unidade_nome }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ 'bg-red-100 text-red-800' if pedido.prioridade == 'P1' else 'bg-yellow-100 text-yellow-800' }}">
+                  {{ pedido.prioridade }}
+                </span>
+                <div class="text-xs text-slate-500 mt-1">
+                  {{ pedido.data_solicitacao.strftime("%d/%m/%Y") if pedido.data_solicitacao }}
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex gap-1">
+                  <!-- Aprovar -->
+                  <form method="post" action="{{ url_for('regulator.aprovar', pedido_id=pedido.id) }}" class="inline">
+                    <input type="hidden" name="tipo_regulacao" value="{{ tipo }}">
+                    <button type="submit" class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors">
+                      ✓ Aprovar
+                    </button>
+                  </form>
+                  
+                  <!-- Devolver -->
+                  <button type="button" onclick="abrirModalDevolver('{{ pedido.id }}', '{{ tipo }}')" 
+                          class="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                    ↵ Devolver
+                  </button>
+                  
+                  <!-- Cancelar -->
+                  <button type="button" onclick="abrirModalCancelar('{{ pedido.id }}')" 
+                          class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors">
+                    ✕ Cancelar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   {% else %}
     <div class="bg-teal-50 border border-teal-200 text-teal-800 rounded-lg p-8 text-center">
@@ -151,14 +158,11 @@ function abrirModalDevolver(pedidoId, tipo) {
   const pedidoIdSpan = document.getElementById('pedido-devolver-id');
   const tipoInput = document.getElementById('tipo-regulacao-devolver');
   
-  // Configurar form action - CORREÇÃO DA URL
   form.action = `/regulador/pedidos/${pedidoId}/devolver`;
   
-  // Configurar campos
   pedidoIdSpan.textContent = pedidoId;
   tipoInput.value = tipo;
   
-  // Limpar textarea
   form.querySelector('textarea[name="motivo"]').value = '';
   
   modal.classList.remove('hidden');
@@ -169,13 +173,10 @@ function abrirModalCancelar(pedidoId) {
   const form = document.getElementById('form-cancelar');
   const pedidoIdSpan = document.getElementById('pedido-cancelar-id');
   
-  // Configurar form action - CORREÇÃO DA URL
   form.action = `/regulador/pedidos/${pedidoId}/cancelar`;
   
-  // Configurar campos
   pedidoIdSpan.textContent = pedidoId;
   
-  // Limpar textarea
   form.querySelector('textarea[name="motivo"]').value = '';
   
   modal.classList.remove('hidden');
@@ -186,14 +187,12 @@ function fecharModal() {
   document.getElementById('modal-cancelar').classList.add('hidden');
 }
 
-// Fechar modal clicando fora
 document.addEventListener('click', (e) => {
   if (e.target.id === 'modal-devolver' || e.target.id === 'modal-cancelar') {
     fecharModal();
   }
 });
 
-// ESC para fechar modal
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     fecharModal();
