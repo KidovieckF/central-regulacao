@@ -1,54 +1,67 @@
 from typing import List, Optional
-from app.extensions import mysql  # usa o mesmo banco de exames
+from app.extensions import mysql
 
-
-def listar_para_agendador_consultas(
-    tipo_regulacao: str,
-    ano: Optional[int] = None,
-    mes: Optional[int] = None,
-    prioridade: Optional[str] = None
-) -> List[dict]:
-    """
-    Lista consultas disponíveis para agendamento (usando o mesmo banco de exames)
-    """
-    if tipo_regulacao not in ("municipal", "estadual"):
-        return []
-
-    status_validos = ("APROVADO", "AGENDAMENTO_EM_ANDAMENTO")
-
+def listar_todas() -> List[dict]:
+    """Lista todas as consultas para administração"""
     query = """
-        SELECT 
-            c.id,
-            c.status,
-            c.tentativas_contato,
-            c.data_consulta,
-            c.horario_consulta,
-            c.local_consulta,
-            c.prioridade,
-            p.nome AS paciente_nome,
-            p.cpf AS paciente_cpf,
-            p.telefone_principal,
-            c.especialidade
-        FROM consultas c
-        JOIN pacientes p ON p.id = c.paciente_id
-        WHERE c.status IN (%s, %s)
-          AND c.tipo_regulacao = %s
+        SELECT id, nome, especialidade, descricao, ativo, criado_em
+        FROM consultas 
+        ORDER BY especialidade
     """
-    params = [status_validos[0], status_validos[1], tipo_regulacao]
-
-    # Filtros opcionais
-    if ano:
-        query += " AND YEAR(c.data_consulta) = %s"
-        params.append(ano)
-    if mes:
-        query += " AND MONTH(c.data_consulta) = %s"
-        params.append(mes)
-    if prioridade:
-        query += " AND c.prioridade = %s"
-        params.append(prioridade)
-
-    query += " ORDER BY c.prioridade ASC, c.data_consulta DESC"
-
     with mysql.get_cursor(dictionary=True) as (_, cursor):
-        cursor.execute(query, tuple(params))
+        cursor.execute(query)
         return cursor.fetchall()
+
+def listar_ativas() -> List[dict]:
+    """Lista apenas consultas ativas para recepção"""
+    query = """
+        SELECT id, especialidade, descricao
+        FROM consultas 
+        WHERE ativo = 1 
+        ORDER BY especialidade
+    """
+    with mysql.get_cursor(dictionary=True) as (_, cursor):
+        cursor.execute(query)
+        return cursor.fetchall()
+
+def obter_por_id(consulta_id: int) -> Optional[dict]:
+    """Obtém consulta por ID"""
+    query = """
+        SELECT id, nome, especialidade, descricao, ativo, criado_em
+        FROM consultas 
+        WHERE id = %s
+    """
+    with mysql.get_cursor(dictionary=True) as (_, cursor):
+        cursor.execute(query, (consulta_id,))
+        return cursor.fetchone()
+
+def criar_consulta(especialidade: str, descricao: str = None) -> int:
+    """Cria nova consulta"""
+    nome = f"Consulta {especialidade}"
+    query = """
+        INSERT INTO consultas (nome, especialidade, descricao, ativo, criado_em)
+        VALUES (%s, %s, %s, 1, NOW())
+    """
+    with mysql.get_cursor() as (conn, cursor):
+        cursor.execute(query, (nome, especialidade, descricao))
+        conn.commit()
+        return cursor.lastrowid
+
+def atualizar_consulta(consulta_id: int, especialidade: str, descricao: str = None):
+    """Atualiza consulta existente"""
+    nome = f"Consulta {especialidade}"
+    query = """
+        UPDATE consultas 
+        SET nome = %s, especialidade = %s, descricao = %s
+        WHERE id = %s
+    """
+    with mysql.get_cursor() as (conn, cursor):
+        cursor.execute(query, (nome, especialidade, descricao, consulta_id))
+        conn.commit()
+
+def alterar_status(consulta_id: int, ativo: bool):
+    """Altera status da consulta"""
+    query = "UPDATE consultas SET ativo = %s WHERE id = %s"
+    with mysql.get_cursor() as (conn, cursor):
+        cursor.execute(query, (1 if ativo else 0, consulta_id))
+        conn.commit()

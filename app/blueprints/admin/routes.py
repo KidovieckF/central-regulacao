@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash
 from app.repositories import exames as exames_repo
 from app.repositories import unidades as unidades_repo
 from app.repositories import usuarios as usuarios_repo
+from app.repositories import consultas as consultas_repo
 from app.utils.decorators import roles_required
 
 from . import admin_bp
@@ -342,7 +343,7 @@ def alterar_status_usuario(usuario_id: int):
     return redirect(url_for("admin.listar_usuarios"))
 
 
-# --- Exames (sem coluna 'ativo') ---
+# --- Exames ---
 
 @admin_bp.route("/exames")
 @login_required
@@ -411,3 +412,93 @@ def editar_exame(exame_id: int):
         titulo_pagina="Editar exame",
         form_action=url_for("admin.editar_exame", exame_id=exame_id),
     )
+
+
+# --- Consultas ---
+
+@admin_bp.route("/consultas")
+@login_required
+@roles_required("admin")
+def listar_consultas():
+    consultas = consultas_repo.listar_todas()
+    return render_template("admin/consultas/list.html", consultas=consultas)
+
+
+@admin_bp.route("/consultas/nova", methods=["GET", "POST"])
+@login_required
+@roles_required("admin")
+def nova_consulta():
+    if request.method == "POST":
+        especialidade = (request.form.get("especialidade") or "").strip()
+        descricao = (request.form.get("descricao") or "").strip() or None
+
+        if not especialidade:
+            flash("Informe a especialidade.", "danger")
+            return render_template(
+                "admin/consultas/form.html",
+                consulta=None,
+                titulo_pagina="Nova especialidade",
+                form_action=url_for("admin.nova_consulta"),
+            )
+
+        consultas_repo.criar_consulta(especialidade=especialidade, descricao=descricao)
+        flash("Especialidade criada com sucesso.", "success")
+        return redirect(url_for("admin.listar_consultas"))
+
+    return render_template(
+        "admin/consultas/form.html",
+        consulta=None,
+        titulo_pagina="Nova especialidade",
+        form_action=url_for("admin.nova_consulta"),
+    )
+
+
+@admin_bp.route("/consultas/<int:consulta_id>/editar", methods=["GET", "POST"])
+@login_required
+@roles_required("admin")
+def editar_consulta(consulta_id: int):
+    consulta = consultas_repo.obter_por_id(consulta_id)
+    if not consulta:
+        flash("Especialidade não encontrada.", "danger")
+        return redirect(url_for("admin.listar_consultas"))
+
+    if request.method == "POST":
+        especialidade = (request.form.get("especialidade") or "").strip()
+        descricao = (request.form.get("descricao") or "").strip() or None
+
+        if not especialidade:
+            flash("Informe a especialidade.", "danger")
+            return render_template(
+                "admin/consultas/form.html",
+                consulta=consulta,
+                titulo_pagina="Editar especialidade",
+                form_action=url_for("admin.editar_consulta", consulta_id=consulta_id),
+            )
+
+        consultas_repo.atualizar_consulta(consulta_id=consulta_id, especialidade=especialidade, descricao=descricao)
+        flash("Especialidade atualizada com sucesso.", "success")
+        return redirect(url_for("admin.listar_consultas"))
+
+    return render_template(
+        "admin/consultas/form.html",
+        consulta=consulta,
+        titulo_pagina="Editar especialidade",
+        form_action=url_for("admin.editar_consulta", consulta_id=consulta_id),
+    )
+
+
+@admin_bp.route("/consultas/<int:consulta_id>/alterar-status", methods=["POST"])
+@login_required
+@roles_required("admin")
+def alterar_status_consulta(consulta_id: int):
+    consulta = consultas_repo.obter_por_id(consulta_id)
+    if not consulta:
+        flash("Especialidade não encontrada.", "danger")
+        return redirect(url_for("admin.listar_consultas"))
+
+    nova_situacao = not bool(consulta["ativo"])
+    consultas_repo.alterar_status(consulta_id=consulta_id, ativo=nova_situacao)
+
+    mensagem = "Especialidade ativada com sucesso." if nova_situacao else "Especialidade desativada com sucesso."
+    flash(mensagem, "success")
+    return redirect(url_for("admin.listar_consultas"))
