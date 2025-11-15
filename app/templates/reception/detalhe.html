@@ -13,16 +13,16 @@
         <p>E-mail: {{ pedido.email or "—" }}</p>
       </div>
       <div>
-        <h2 class="font-semibold text-slate-700">Exame</h2>
-        <p>{{ pedido.exame_nome }}</p>
+        <h2 class="font-semibold text-slate-700">{{ 'Exame' if pedido.tipo_solicitacao == 'exame' else 'Consulta' }}</h2>
+        <p>{{ pedido.nome_solicitacao or pedido.exame_nome or pedido.consulta_nome }}</p>
         <p>Prioridade: {{ pedido.prioridade or "—" }}</p>
         <p>Tipo de regulação: {{ pedido.tipo_regulacao or "—" }}</p>
         <p>Status atual: <span class="badge bg-sky-100 text-sky-700">{{ pedido.status }}</span></p>
       </div>
       <div>
         <h2 class="font-semibold text-slate-700">Agendamento</h2>
-        <p>Data: {{ pedido.data_exame.strftime("%d/%m/%Y") if pedido.data_exame }}</p>
-        <p>Horário: {{ pedido.horario_exame.strftime("%H:%M") if pedido.horario_exame }}</p>
+        <p>Data: {{ pedido.data_exame.strftime("%d/%m/%Y") if pedido.data_exame else "—" }}</p>
+        <p>Horário: {{ pedido.horario_exame.strftime("%H:%M") if pedido.horario_exame else "—" }}</p>
         <p>Local: {{ pedido.local_exame or "—" }}</p>
       </div>
       <div>
@@ -35,20 +35,14 @@
 
     <div class="flex flex-wrap justify-end gap-3 mt-6">
       {% if pedido.pendente_recepcao and pedido.paciente_id %}
-        <a
-          href="{{ url_for('reception.editar_paciente', paciente_id=pedido.paciente_id, next=request.url) }}"
-          class="btn-outline"
-        >
+        <a href="{{ url_for('reception.editar_paciente', paciente_id=pedido.paciente_id, next=request.url) }}" class="btn-outline">
           Editar paciente
         </a>
         <a href="{{ url_for('reception.tratar_devolucao', pedido_id=pedido.id) }}" class="btn-primary">
           Registrar tratativa
         </a>
       {% endif %}
-      <form method="post"
-            action="{{ url_for('reception.cancelar_pedido', pedido_id=pedido.id) }}"
-            onsubmit="return confirm('Confirmar cancelamento do pedido?');">
-        <input type="hidden" name="justificativa" value="">
+      <form method="post" action="{{ url_for('reception.cancelar_pedido', pedido_id=pedido.id) }}">
         <button type="button" onclick="abrirModalCancelamento()" class="btn-outline">
           Cancelar pedido
         </button>
@@ -63,7 +57,13 @@
         <li class="border border-slate-200 rounded p-3 text-sm text-slate-600">
           <div class="flex justify-between">
             <span class="font-medium text-slate-700">{{ evento.usuario_nome }}</span>
-            <span class="text-xs text-slate-400">{{ evento.criado_em.strftime("%d/%m/%Y %H:%M") }}</span>
+            <!-- ✅ CORREÇÃO DO TIMEZONE: subtrair 3 horas -->
+            <span class="text-xs text-slate-400">
+              {% if evento.criado_em %}
+                {% set data_corrigida = evento.criado_em - timedelta(hours=3) %}
+                {{ data_corrigida.strftime("%d/%m/%Y %H:%M") }}
+              {% endif %}
+            </span>
           </div>
           <p class="mt-2">{{ evento.descricao or evento.status }}</p>
         </li>

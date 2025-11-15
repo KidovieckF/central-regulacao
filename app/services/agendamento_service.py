@@ -28,9 +28,9 @@ def registrar_tentativa(
             """
             INSERT INTO tentativas_contato
             (pedido_id, tentativa_numero, resultado, resumo, data_tentativa, usuario_id)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, NOW(), %s)
             """,
-            (pedido_id, nova_tentativa, resultado, resumo, datetime.utcnow(), usuario_id),
+            (pedido_id, nova_tentativa, resultado, resumo, usuario_id),  # ✅ REMOVIDO datetime.utcnow()
         )
 
         cursor.execute(

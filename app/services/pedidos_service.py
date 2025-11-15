@@ -9,12 +9,12 @@ from app.repositories import pedidos as pedidos_repo
 def registrar_historico(pedido_id: int, status: StatusPedido, descricao: Optional[str], usuario_id: int):
     query = """
         INSERT INTO historico_pedidos (pedido_id, status, descricao, criado_por, criado_em)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, NOW())
     """
     with mysql.get_cursor() as (_, cursor):
         cursor.execute(
             query,
-            (pedido_id, status.value, descricao, usuario_id, datetime.utcnow()),
+            (pedido_id, status.value, descricao, usuario_id),  # ✅ REMOVIDO datetime.utcnow()
         )
 
 

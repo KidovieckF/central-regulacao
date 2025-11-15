@@ -477,7 +477,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 /**
- * chat.js — Versão com compartilhamento de arquivos
+ * chat.js — Versão SEM conversão de timezone
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -513,6 +513,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Inicialização
   carregarConversas();
+
+  /* ======================================================
+   *  FUNÇÕES DE TEMPO SEM CONVERSÃO DE TIMEZONE
+   * ====================================================== */
+  function formatarHorario(timestamp) {
+    if (!timestamp) return "";
+    
+    // ✅ EXTRAIR HORA DIRETAMENTE DA STRING SEM CONVERSÃO
+    const timestampStr = timestamp.toString();
+    
+    // Buscar padrão HH:MM:SS no timestamp
+    const timeMatch = timestampStr.match(/(\d{2}):(\d{2}):(\d{2})/);
+    if (timeMatch) {
+      return `${timeMatch[1]}:${timeMatch[2]}`;  // Apenas HH:MM
+    }
+    
+    // Fallback: buscar padrão T + horário no formato ISO
+    const isoMatch = timestampStr.match(/T(\d{2}):(\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[1]}:${isoMatch[2]}`;
+    }
+    
+    return ""; // Se não conseguir extrair
+  }
+
+  function formatarTempoRelativo(timestamp) {
+    if (!timestamp) return "";
+    
+    // ✅ USAR TIMESTAMP COMO STRING PARA EVITAR CONVERSÃO
+    const timestampStr = timestamp.toString();
+    
+    // Extrair data no formato YYYY-MM-DD
+    const dateMatch = timestampStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!dateMatch) return formatarHorario(timestamp);
+    
+    const [, year, month, day] = dateMatch;
+    const hoje = new Date();
+    
+    // Criar data sem horário para comparar apenas dias
+    const dataMsg = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const dataHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    
+    const diffDias = Math.floor((dataHoje - dataMsg) / (1000 * 60 * 60 * 24));
+    
+    if (diffDias === 0) return 'hoje';
+    if (diffDias === 1) return '1d';
+    if (diffDias < 7) return `${diffDias}d`;
+    if (diffDias < 30) return `${Math.floor(diffDias / 7)}sem`;
+    
+    return formatarHorario(timestamp);
+  }
 
   /* ======================================================
    *  SISTEMA DE ARQUIVOS
@@ -639,17 +690,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* ======================================================
-   *  Funções utilitárias
-   * ====================================================== */
-  function formatarHorario(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  }
-
   function gerarCorAvatar(nome) {
     const cores = [
       '#ef4444', '#f97316', '#f59e0b', '#eab308', 
@@ -662,24 +702,6 @@ document.addEventListener("DOMContentLoaded", () => {
       hash = nome.charCodeAt(i) + ((hash << 5) - hash);
     }
     return cores[Math.abs(hash) % cores.length];
-  }
-
-  function formatarTempoRelativo(timestamp) {
-    const agora = new Date();
-    const data = new Date(timestamp);
-    const diffMs = agora - data;
-    const diffMinutos = Math.floor(diffMs / 60000);
-    
-    if (diffMinutos < 1) return 'agora';
-    if (diffMinutos < 60) return `${diffMinutos}min`;
-    
-    const diffHoras = Math.floor(diffMinutos / 60);
-    if (diffHoras < 24) return `${diffHoras}h`;
-    
-    const diffDias = Math.floor(diffHoras / 24);
-    if (diffDias < 7) return `${diffDias}d`;
-    
-    return formatarHorario(timestamp);
   }
 
   /* ======================================================
@@ -835,12 +857,17 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(r => r.json())
       .then(msgs => {
         messagesDiv.innerHTML = "";
-        msgs.forEach(m => renderMessage(m.user, m.message, m.created_at, m.attachments));
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        if (Array.isArray(msgs)) {
+          msgs.forEach(m => renderMessage(m.user, m.message, m.created_at, m.attachments));
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } else {
+          console.error("Erro da API:", msgs);
+          messagesDiv.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100px; color: #ef4444;">Erro: ' + (msgs.error || 'Erro desconhecido') + '</div>';
+        }
       })
       .catch(err => {
         console.error("❌ Erro ao carregar mensagens:", err);
-        messagesDiv.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100px; color: #ef4444;">Erro ao carregar mensagens</div>';
+        messagesDiv.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100px; color: #ef4444;">Erro de conexão</div>';
       });
   }
 
@@ -859,7 +886,7 @@ document.addEventListener("DOMContentLoaded", () => {
       div.classList.add("received");
     }
 
-    const timeStr = timestamp ? formatarHorario(timestamp) : formatarHorario(new Date());
+    const timeStr = timestamp ? formatarHorario(timestamp) : "";
     
     let messageHTML = '';
     
@@ -878,7 +905,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
     
-    messageHTML += `<div class="message-time">${timeStr}</div>`;
+    if (timeStr) {
+      messageHTML += `<div class="message-time">${timeStr}</div>`;
+    }
     
     div.innerHTML = messageHTML;
     messagesDiv.appendChild(div);
