@@ -34,6 +34,8 @@ class MySQLConnector:
             password=app.config["MYSQL_PASSWORD"],
             database=app.config["MYSQL_DATABASE"],
             autocommit=False,
+            time_zone='-03:00',  # ✅ TIMEZONE BRASÍLIA
+            sql_mode='',  # ✅ OPCIONAL: desabilitar modo estrito se necessário
         )
 
         app.logger.info("Pool de conexões MySQL inicializado.")
@@ -44,6 +46,9 @@ class MySQLConnector:
             raise RuntimeError("Pool de conexões não inicializado.")
 
         with self.get_cursor(dictionary=False) as (connection, cursor):
+            # ✅ DEFINIR TIMEZONE LOGO APÓS CONECTAR
+            cursor.execute("SET time_zone = '-03:00'")
+            
             for statement in SCHEMA_STATEMENTS:
                 cursor.execute(statement)
 
@@ -96,7 +101,12 @@ class MySQLConnector:
     def get_connection(self) -> mysql.connector.MySQLConnection:
         if not self.pool:
             raise RuntimeError("Pool de conexões não inicializado.")
-        return self.pool.get_connection()
+        connection = self.pool.get_connection()
+        # ✅ DEFINIR TIMEZONE EM CADA CONEXÃO
+        cursor = connection.cursor()
+        cursor.execute("SET time_zone = '-03:00'")
+        cursor.close()
+        return connection
 
     @contextmanager
     def get_cursor(

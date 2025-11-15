@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Relatórios · Central de Regulação{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Relatórios do Sistema</h1>
+    <p class="text-slate-600">Análise detalhada da atividade do sistema</p>
+  </div>
+
+  <!-- Pedidos por Período -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-slate-800 mb-4">Pedidos por Período (12 meses)</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Mês</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tipo</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          {% for item in relatorios.pedidos_periodo %}
+            <tr>
+              <td class="px-4 py-3 text-sm font-medium text-slate-700">{{ item.mes }}</td>
+              <td class="px-4 py-3">
+                {% if item.tipo_solicitacao == 'exame' %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Exame
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Consulta
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-600">{{ item.status.replace('_', ' ').title() }}</td>
+              <td class="px-4 py-3 text-sm font-bold text-slate-900">{{ item.total }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Performance por Unidade -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-slate-800 mb-4">Performance por Unidade (3 meses)</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Unidade</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Total Pedidos</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Agendados</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cancelados</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tempo Médio</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          {% for unidade in relatorios.performance_unidades %}
+            <tr>
+              <td class="px-4 py-3 text-sm font-medium text-slate-700">{{ unidade.unidade }}</td>
+              <td class="px-4 py-3 text-sm text-slate-600">{{ unidade.total_pedidos or 0 }}</td>
+              <td class="px-4 py-3 text-sm text-green-600 font-medium">{{ unidade.agendados or 0 }}</td>
+              <td class="px-4 py-3 text-sm text-red-600">{{ unidade.cancelados or 0 }}</td>
+              <td class="px-4 py-3 text-sm text-slate-600">
+                {{ '%.1f dias'|format(unidade.tempo_medio_dias or 0) }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Usuários Mais Ativos -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-slate-800 mb-4">Usuários Mais Ativos (30 dias)</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for usuario in relatorios.usuarios_ativos[:9] %}
+        <div class="p-4 border border-slate-200 rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-medium text-slate-700">{{ usuario.nome }}</span>
+            <span class="text-xs px-2 py-1 bg-slate-100 rounded">{{ usuario.role.replace('_', ' ').title() }}</span>
+          </div>
+          <p class="text-sm text-slate-600">{{ usuario.acoes_realizadas or 0 }} ações</p>
+          <p class="text-xs text-slate-500">
+            {% if usuario.ultimo_acesso %}
+              Último acesso: {{ usuario.ultimo_acesso.strftime('%d/%m %H:%M') }}
+            {% else %}
+              Nunca acessou
+            {% endif %}
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

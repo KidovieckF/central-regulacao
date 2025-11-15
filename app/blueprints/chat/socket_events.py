@@ -1,7 +1,6 @@
 from flask_socketio import emit, join_room
 from flask_login import current_user
 from app.extensions import socketio, mysql
-from datetime import datetime
 import json
 
 @socketio.on('connect')
@@ -11,9 +10,9 @@ def on_connect():
             with mysql.get_cursor() as (conn, cursor):
                 cursor.execute("""
                     UPDATE usuarios 
-                    SET is_online = TRUE, last_seen = %s 
+                    SET is_online = TRUE, last_seen = NOW()
                     WHERE id = %s
-                """, (datetime.now(), current_user.id))
+                """, (current_user.id,))  # ✅ USAR NOW()
                 conn.commit()
             
             emit('user_status_changed', {
@@ -34,9 +33,9 @@ def on_disconnect():
             with mysql.get_cursor() as (conn, cursor):
                 cursor.execute("""
                     UPDATE usuarios 
-                    SET is_online = FALSE, last_seen = %s 
+                    SET is_online = FALSE, last_seen = NOW()
                     WHERE id = %s
-                """, (datetime.now(), current_user.id))
+                """, (current_user.id,))  # ✅ USAR NOW()
                 conn.commit()
             
             emit('user_status_changed', {
@@ -57,9 +56,9 @@ def on_heartbeat():
             with mysql.get_cursor() as (conn, cursor):
                 cursor.execute("""
                     UPDATE usuarios 
-                    SET last_seen = %s 
+                    SET last_seen = NOW()
                     WHERE id = %s
-                """, (datetime.now(), current_user.id))
+                """, (current_user.id,))  # ✅ USAR NOW()
                 conn.commit()
         except Exception as e:
             print(f"❌ Erro no heartbeat: {e}")
@@ -80,7 +79,7 @@ def handle_send_message(data):
         room = data.get("room")
         conversation_id = data.get("conversation_id")
         message_text = (data.get("message") or "").strip()
-        attachments = data.get("attachments", [])  # ✅ ADICIONADO
+        attachments = data.get("attachments", [])
 
         if not room or not conversation_id or (not message_text and not attachments):
             print("⚠️ Dados incompletos para enviar mensagem.")
@@ -101,7 +100,12 @@ def handle_send_message(data):
             
             message_id = cursor.lastrowid
             
-            # ✅ SALVAR ANEXOS NO BANCO
+            # ✅ BUSCAR TIMESTAMP CORRETO DA MENSAGEM INSERIDA
+            cursor.execute("SELECT created_at FROM messages WHERE id = %s", (message_id,))
+            message_row = cursor.fetchone()
+            message_timestamp = message_row['created_at']
+            
+            # Salvar anexos
             saved_attachments = []
             if attachments:
                 for attachment in attachments:
@@ -128,15 +132,15 @@ def handle_send_message(data):
             if current_user.is_authenticated:
                 cursor.execute("""
                     UPDATE usuarios 
-                    SET last_seen = %s 
+                    SET last_seen = NOW()
                     WHERE id = %s
-                """, (datetime.now(), current_user.id))
+                """, (current_user.id,))  # ✅ USAR NOW()
             
             conn.commit()
 
         print(f"✅ Mensagem salva na conversa {conversation_id} por {user_name}")
 
-        # ✅ EMITIR MENSAGEM COM ANEXOS
+        # ✅ EMITIR COM TIMESTAMP DO BANCO
         emit(
             "message",
             {
@@ -144,13 +148,12 @@ def handle_send_message(data):
                 "room": room,
                 "user": user_name,
                 "msg": message_text,
-                "attachments": saved_attachments,  # ✅ INCLUIR ANEXOS
-                "timestamp": datetime.now().isoformat(),
+                "attachments": saved_attachments,
+                "timestamp": message_timestamp.isoformat(),  # ✅ TIMESTAMP CORRETO
             },
             room=room,
         )
 
-        # Atualizar preview da sidebar
         preview_text = message_text or f"📎 {len(saved_attachments)} arquivo(s)"
         emit(
             "update_conversations",
