@@ -1,8 +1,306 @@
 {% extends "base.html" %}
-{% block title %}Central de Regulação{% endblock %}
+{% block title %}Dashboard · Central de Regulação{% endblock %}
+
 {% block content %}
-<div class="bg-white rounded-lg shadow p-8 text-center">
-  <h2 class="text-2xl font-semibold text-slate-700 mb-3">Bem-vindo(a)</h2>
-  <p class="text-slate-600">Selecione uma opção no menu superior de acordo com o seu perfil.</p>
+<div class="space-y-6">
+  <!-- Header do Dashboard -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-800">Dashboard</h1>
+        <p class="text-slate-600">Visão geral do sistema de regulação</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-slate-500">Última atualização:</span>
+        <span class="text-sm font-medium text-slate-700">{{ datetime.now().strftime('%d/%m/%Y %H:%M') }}</span>
+        <a href="{{ url_for('dashboards.relatorios') }}" class="btn-outline text-sm">
+          📊 Relatórios Detalhados
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de Estatísticas Gerais -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Total de Pedidos</p>
+          <p class="text-2xl font-bold text-slate-900">{{ stats.pedidos.total or 0 }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ stats.pedidos.hoje or 0 }} hoje</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-8 2h2v4h4v2h-4v4h-2v-4H7v-2h4V5z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Agendados</p>
+          <p class="text-2xl font-bold text-slate-900">{{ stats.pedidos.agendados or 0 }}</p>
+          <p class="text-xs text-green-600 mt-1">✓ Finalizados</p>
+        </div>
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Aguardando</p>
+          <p class="text-2xl font-bold text-slate-900">{{ stats.pedidos.aguardando or 0 }}</p>
+          <p class="text-xs text-yellow-600 mt-1">⏳ Em processamento</p>
+        </div>
+        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-primario-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Usuários Online</p>
+          <p class="text-2xl font-bold text-slate-900">{{ stats.usuarios.online or 0 }}</p>
+          <p class="text-xs text-primario-600 mt-1">de {{ stats.usuarios.ativos or 0 }} ativos</p>
+        </div>
+        <div class="w-12 h-12 bg-primario-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-primario-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Atividade Recente -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Atividade dos Últimos 7 Dias</h3>
+      <div class="space-y-3">
+        {% for dia in stats.atividade %}
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div>
+              <span class="font-medium text-slate-700">{{ dia.data.strftime('%d/%m/%Y') if dia.data }}</span>
+              <div class="text-sm text-slate-500">
+                {{ dia.exames or 0 }} exames • {{ dia.consultas or 0 }} consultas
+              </div>
+            </div>
+            <span class="text-xl font-bold text-primario-600">{{ dia.total or 0 }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Estatísticas por Unidade -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Unidades Mais Ativas</h3>
+      <div class="space-y-3">
+        {% for unidade in stats.unidades[:5] %}
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-sm font-medium text-slate-700">{{ unidade.unidade }}</span>
+              <div class="text-xs text-slate-500">{{ unidade.pendentes or 0 }} pendentes</div>
+            </div>
+            <span class="text-sm font-bold text-slate-600">{{ unidade.total_pedidos or 0 }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if user_role == "admin" %}
+    <!-- Seção específica para Admin -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Usuários por Perfil</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {% for role_stat in role_stats.usuarios_por_role %}
+          <div class="text-center p-4 bg-slate-50 rounded-lg">
+            <p class="text-2xl font-bold text-primario-600">{{ role_stat.total }}</p>
+            <p class="text-sm text-slate-600">{{ role_stat.role.replace('_', ' ').title() }}</p>
+            <p class="text-xs text-green-600">{{ role_stat.online }} online</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if user_role == "medico_regulador" %}
+    <!-- Seção específica para Médico Regulador -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Pedidos Aguardando Análise</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for reg in role_stats.pedidos_regulacao %}
+          <div class="p-6 border border-slate-200 rounded-lg">
+            <h4 class="font-medium text-slate-700 mb-2">{{ reg.tipo_regulacao.title() }}</h4>
+            <p class="text-3xl font-bold text-slate-900 mb-1">{{ reg.total }}</p>
+            <p class="text-sm text-red-600">{{ reg.urgentes }} urgentes (P1)</p>
+            <a href="{{ url_for('regulator.painel', tipo=reg.tipo_regulacao) }}" 
+               class="btn-primary text-sm mt-3">
+              Ver Painel
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if user_role == "malote" %}
+    <!-- Seção específica para Malote -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Pedidos para Triagem por Unidade</h3>
+      <div class="space-y-3">
+        {% for unidade in role_stats.pedidos_por_unidade %}
+          <div class="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+            <div>
+              <span class="font-medium text-slate-700">{{ unidade.unidade }}</span>
+              <div class="text-sm text-slate-500">
+                {{ unidade.devolvidos or 0 }} devolvidos sem contato
+              </div>
+            </div>
+            <span class="text-xl font-bold text-primario-600">{{ unidade.total }}</span>
+          </div>
+        {% endfor %}
+        <div class="pt-4">
+          <a href="{{ url_for('malote.listar') }}" class="btn-primary w-full text-center">
+            Ver Todos os Pedidos
+          </a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Estatísticas do Chat -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Comunicação Interna</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="text-center p-4 bg-slate-50 rounded-lg">
+        <p class="text-2xl font-bold text-slate-900">{{ stats.chat.total_conversas or 0 }}</p>
+        <p class="text-sm text-slate-600">Conversas Ativas</p>
+      </div>
+      <div class="text-center p-4 bg-slate-50 rounded-lg">
+        <p class="text-2xl font-bold text-slate-900">{{ stats.chat.total_mensagens or 0 }}</p>
+        <p class="text-sm text-slate-600">Mensagens Enviadas</p>
+      </div>
+      <div class="text-center p-4 bg-slate-50 rounded-lg">
+        <p class="text-2xl font-bold text-primario-600">{{ stats.chat.mensagens_hoje or 0 }}</p>
+        <p class="text-sm text-slate-600">Mensagens Hoje</p>
+      </div>
+    </div>
+    <div class="mt-4 text-center">
+      <a href="{{ url_for('chat.chat') }}" class="btn-outline text-sm">
+        💬 Abrir Chat
+      </a>
+    </div>
+  </div>
+
+  <!-- Breakdown por Tipo de Solicitação -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Exames</h3>
+      <div class="text-center">
+        <p class="text-4xl font-bold text-blue-600 mb-2">{{ stats.pedidos.total_exames or 0 }}</p>
+        <p class="text-sm text-slate-600">Pedidos de exames</p>
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-red-600 font-medium">P1:</span>
+              <span class="text-slate-700">{{ (stats.pedidos.prioridade_alta or 0) * 0.7 | round | int }}</span>
+            </div>
+            <div>
+              <span class="text-yellow-600 font-medium">P2:</span>
+              <span class="text-slate-700">{{ ((stats.pedidos.total_exames or 0) - ((stats.pedidos.prioridade_alta or 0) * 0.7 | round | int)) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4">Consultas</h3>
+      <div class="text-center">
+        <p class="text-4xl font-bold text-green-600 mb-2">{{ stats.pedidos.total_consultas or 0 }}</p>
+        <p class="text-sm text-slate-600">Pedidos de consultas</p>
+        <div class="mt-4 p-4 bg-green-50 rounded-lg">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-red-600 font-medium">P1:</span>
+              <span class="text-slate-700">{{ (stats.pedidos.prioridade_alta or 0) * 0.3 | round | int }}</span>
+            </div>
+            <div>
+              <span class="text-yellow-600 font-medium">P2:</span>
+              <span class="text-slate-700">{{ ((stats.pedidos.total_consultas or 0) - ((stats.pedidos.prioridade_alta or 0) * 0.3 | round | int)) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ações Rápidas -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Ações Rápidas</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {% if user_role == "admin" %}
+        <a href="{{ url_for('admin.listar_usuarios') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-primario-300 hover:bg-primario-50 transition">
+          <div class="w-10 h-10 bg-primario-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primario-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <span class="font-medium text-slate-700">Gerenciar Usuários</span>
+        </a>
+        <a href="{{ url_for('admin.listar_unidades') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-primario-300 hover:bg-primario-50 transition">
+          <div class="w-10 h-10 bg-primario-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primario-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 7h16M4 7a2 2 0 012-2h12a2 2 0 012 2M4 7v9a2 2 0 002 2h12a2 2 0 002-2V7M9 16h6"/>
+            </svg>
+          </div>
+          <span class="font-medium text-slate-700">Unidades de Saúde</span>
+        </a>
+      {% endif %}
+      
+      {% if user_role in ["admin", "medico_regulador"] %}
+        <a href="{{ url_for('regulator.painel', tipo='municipal') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-primario-300 hover:bg-primario-50 transition">
+          <div class="w-10 h-10 bg-primario-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primario-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 5h18M8 5v14M16 5v14M3 19h18"/>
+            </svg>
+          </div>
+          <span class="font-medium text-slate-700">Regulação</span>
+        </a>
+      {% endif %}
+      
+      {% if user_role in ["admin", "malote"] %}
+        <a href="{{ url_for('malote.listar') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-primario-300 hover:bg-primario-50 transition">
+          <div class="w-10 h-10 bg-primario-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primario-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 15l6 6m0 0l6-6m-6 6V3"/>
+            </svg>
+          </div>
+          <span class="font-medium text-slate-700">Triagem</span>
+        </a>
+      {% endif %}
+      
+      <a href="{{ url_for('chat.chat') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-primario-300 hover:bg-primario-50 transition">
+        <div class="w-10 h-10 bg-primario-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-primario-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3 7h18M5 11h14M7 15h10M9 19h6"/>
+          </svg>
+        </div>
+        <span class="font-medium text-slate-700">Chat Interno</span>
+      </a>
+    </div>
+  </div>
 </div>
 {% endblock %}

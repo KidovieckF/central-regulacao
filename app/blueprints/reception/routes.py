@@ -280,7 +280,22 @@ def detalhes_pedido(pedido_id: int):
     pedido["horario_exame"] = _to_time(pedido.get("horario_exame"))
 
     historico = pedidos_repo.obter_historico(pedido_id)
-    return render_template("reception/detalhe.html", pedido=pedido, historico=historico)
+    
+    # ✅ CORREÇÃO: ajustar timezone do histórico
+    import pytz
+    from datetime import timedelta
+    
+    for evento in historico:
+        if evento['criado_em']:
+            # Subtrair 3 horas para corrigir timezone
+            evento['criado_em_local'] = evento['criado_em'] - timedelta(hours=3)
+    
+    return render_template(
+        "reception/detalhe.html", 
+        pedido=pedido, 
+        historico=historico,
+        timedelta=timedelta  # ✅ PASSAR TIMEDELTA PARA TEMPLATE
+    )
 
 
 @reception_bp.route("/pedidos/<int:pedido_id>/cancelar", methods=["POST"])

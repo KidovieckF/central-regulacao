@@ -1,63 +1,237 @@
 {% extends "base.html" %}
 {% block title %}Triagem do Malote{% endblock %}
+
 {% block content %}
-<h1 class="text-2xl font-semibold text-slate-700 mb-6">Triagem do Malote</h1>
-<div class="bg-white rounded-lg shadow overflow-hidden">
-  <table class="min-w-full divide-y divide-slate-200">
-    <thead class="bg-slate-50">
-      <tr>
-        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Unidade</th>
-        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Paciente</th>
-        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Solicitação</th>
-        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status atual</th>
-        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Ação</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-200 bg-white">
-      {% for pedido in pedidos %}
-        <tr>
-          <td class="px-4 py-3 text-sm font-medium text-slate-700">{{ pedido.unidade_nome }}</td>
-          <td class="px-4 py-3">
-            <div class="text-sm font-medium text-slate-700">{{ pedido.paciente_nome }}</div>
-            <div class="text-xs text-slate-500">{{ pedido.paciente_cpf }}</div>
-          </td>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-2">
-              {% if pedido.tipo_solicitacao == 'exame' %}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  🔬 Exame
-                </span>
-              {% else %}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  👩‍⚕️ Consulta
-                </span>
-              {% endif %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <h1 class="text-2xl font-semibold text-slate-700 mb-4 sm:mb-0">Triagem do Malote</h1>
+        <div class="flex items-center gap-2 text-sm text-slate-600">
+            <span id="contador-pedidos">{{ pedidos|length }}</span>
+            <span>pedidos encontrados</span>
+        </div>
+    </div>
+
+    <!-- Seção de Filtros -->
+    <div class="bg-white rounded-lg shadow p-4 md:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 class="text-lg font-medium text-slate-700">Filtros de Busca</h2>
+            {% if filtros.unidade or filtros.categoria or filtros.cpf or filtros.nome %}
+                <a href="{{ url_for('malote.limpar_filtros') }}" class="text-sm text-sky-600 hover:text-sky-700 underline">
+                    Limpar todos os filtros
+                </a>
+            {% endif %}
+        </div>
+        
+        <form method="get" action="{{ url_for('malote.listar') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <!-- Filtro por Unidade -->
+            <div>
+                <label for="unidade" class="block text-sm font-medium text-slate-700 mb-1">Unidade</label>
+                <select name="unidade" id="unidade" class="w-full rounded-md border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm">
+                    <option value="">Todas as unidades</option>
+                    {% if unidades_disponiveis %}
+                        {% for unidade_opt in unidades_disponiveis %}
+                            <option value="{{ unidade_opt }}" {% if filtros.unidade == unidade_opt %}selected{% endif %}>
+                                {{ unidade_opt }}
+                            </option>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Opções padrão se não há unidades_disponiveis -->
+                        {% set unidades_encontradas = [] %}
+                        {% for pedido in pedidos %}
+                            {% if pedido.unidade_nome not in unidades_encontradas %}
+                                {% set _ = unidades_encontradas.append(pedido.unidade_nome) %}
+                                <option value="{{ pedido.unidade_nome }}" {% if filtros.unidade == pedido.unidade_nome %}selected{% endif %}>
+                                    {{ pedido.unidade_nome }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </select>
             </div>
-            <div class="text-sm text-slate-600 mt-1">{{ pedido.nome_solicitacao }}</div>
-          </td>
-          <td class="px-4 py-3 text-sm text-slate-600">{{ pedido.status }}</td>
-          <td class="px-4 py-3">
-            <form method="post" action="{{ url_for('malote.classificar', pedido_id=pedido.id) }}" class="flex flex-col md:flex-row gap-2">
-              <select name="tipo_regulacao" required class="rounded border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm">
-                <option value="">Regulação</option>
-                <option value="municipal">Municipal</option>
-                <option value="estadual">CROSS / Estadual</option>
-              </select>
-              <select name="prioridade" required class="rounded border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm">
-                <option value="">Prioridade</option>
-                <option value="P1">P1</option>
-                <option value="P2">P2</option>
-              </select>
-              <button type="submit" class="btn-primary text-sm">Encaminhar</button>
-            </form>
-          </td>
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="5" class="px-4 py-6 text-center text-slate-500 text-sm">Nenhum pedido aguardando triagem.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+            <!-- Filtro por Categoria -->
+            <div>
+                <label for="categoria" class="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                <select name="categoria" id="categoria" class="w-full rounded-md border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm">
+                    <option value="">Todas as categorias</option>
+                    <option value="exame" {% if filtros.categoria == 'exame' %}selected{% endif %}>Exame</option>
+                    <option value="consulta" {% if filtros.categoria == 'consulta' %}selected{% endif %}>Consulta</option>
+                </select>
+            </div>
+
+            <!-- Filtro por CPF -->
+            <div>
+                <label for="cpf" class="block text-sm font-medium text-slate-700 mb-1">CPF do Paciente</label>
+                <input 
+                    type="text" 
+                    name="cpf" 
+                    id="cpf" 
+                    value="{{ filtros.cpf or '' }}"
+                    placeholder="Digite o CPF"
+                    class="w-full rounded-md border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm"
+                    maxlength="14"
+                    oninput="formatarCPF(this)"
+                >
+            </div>
+
+            <!-- Filtro por Nome -->
+            <div>
+                <label for="nome" class="block text-sm font-medium text-slate-700 mb-1">Nome do Paciente</label>
+                <input 
+                    type="text" 
+                    name="nome" 
+                    id="nome" 
+                    value="{{ filtros.nome or '' }}"
+                    placeholder="Digite o nome"
+                    class="w-full rounded-md border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm"
+                >
+            </div>
+
+            <!-- Botão de busca -->
+            <div class="md:col-span-2 lg:col-span-4">
+                <button type="submit" class="btn-primary text-sm">
+                    Buscar
+                </button>
+            </div>
+        </form>
+
+        <!-- Filtros ativos -->
+        {% if filtros.unidade or filtros.categoria or filtros.cpf or filtros.nome %}
+            <div class="mt-4 p-3 bg-sky-50 rounded-lg">
+                <p class="text-sm text-sky-800 mb-2">Filtros ativos:</p>
+                <div class="flex flex-wrap gap-2">
+                    {% if filtros.unidade %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+                            Unidade: {{ filtros.unidade }}
+                            <a href="{{ url_for('malote.listar', categoria=filtros.categoria, cpf=filtros.cpf, nome=filtros.nome) }}" class="ml-1 text-sky-600 hover:text-sky-800">×</a>
+                        </span>
+                    {% endif %}
+                    {% if filtros.categoria %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+                            Categoria: {{ filtros.categoria|title }}
+                            <a href="{{ url_for('malote.listar', unidade=filtros.unidade, cpf=filtros.cpf, nome=filtros.nome) }}" class="ml-1 text-sky-600 hover:text-sky-800">×</a>
+                        </span>
+                    {% endif %}
+                    {% if filtros.cpf %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+                            CPF: {{ filtros.cpf }}
+                            <a href="{{ url_for('malote.listar', unidade=filtros.unidade, categoria=filtros.categoria, nome=filtros.nome) }}" class="ml-1 text-sky-600 hover:text-sky-800">×</a>
+                        </span>
+                    {% endif %}
+                    {% if filtros.nome %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+                            Nome: {{ filtros.nome }}
+                            <a href="{{ url_for('malote.listar', unidade=filtros.unidade, categoria=filtros.categoria, cpf=filtros.cpf) }}" class="ml-1 text-sky-600 hover:text-sky-800">×</a>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Tabela de Pedidos -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Unidade</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Paciente</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Solicitação</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Data/Horário</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status atual</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Ação</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for pedido in pedidos %}
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-slate-700 whitespace-nowrap">{{ pedido.unidade_nome }}</td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-slate-700">{{ pedido.paciente_nome }}</div>
+                                <div class="text-xs text-slate-500">{{ pedido.paciente_cpf }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    {% if pedido.tipo_solicitacao == 'exame' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            🔬 Exame
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            👩‍⚕️ Consulta
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-sm text-slate-600 mt-1">{{ pedido.nome_solicitacao }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
+                                <div class="flex flex-col">
+                                    <span class="font-medium">{{ pedido.data_solicitacao.strftime('%d/%m/%Y') if pedido.data_solicitacao else '-' }}</span>
+                                    <span class="text-xs text-slate-500">{{ pedido.data_solicitacao.strftime('%H:%M') if pedido.data_solicitacao else '' }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{{ pedido.status }}</td>
+                            <td class="px-4 py-3">
+                                <!-- Campos hidden para manter filtros após submit -->
+                                <input type="hidden" name="filtro_unidade" value="{{ filtros.unidade }}">
+                                <input type="hidden" name="filtro_categoria" value="{{ filtros.categoria }}">
+                                <input type="hidden" name="filtro_cpf" value="{{ filtros.cpf }}">
+                                <input type="hidden" name="filtro_nome" value="{{ filtros.nome }}">
+                                
+                                <form method="post" action="{{ url_for('malote.classificar', pedido_id=pedido.id) }}" class="flex flex-col sm:flex-row gap-2">
+                                    <select name="tipo_regulacao" required class="rounded border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm">
+                                        <option value="">Regulação</option>
+                                        <option value="municipal">Municipal</option>
+                                        <option value="estadual">CROSS / Estadual</option>
+                                    </select>
+                                    <select name="prioridade" required class="rounded border-slate-300 focus:border-sky-500 focus:ring-sky-500 text-sm">
+                                        <option value="">Prioridade</option>
+                                        <option value="P1">P1</option>
+                                        <option value="P2">P2</option>
+                                    </select>
+                                    <button type="submit" class="btn-primary text-sm whitespace-nowrap">Encaminhar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-6 text-center text-slate-500 text-sm">
+                                {% if filtros.unidade or filtros.categoria or filtros.cpf or filtros.nome %}
+                                    Nenhum pedido encontrado com os filtros aplicados.
+                                {% else %}
+                                    Nenhum pedido aguardando triagem.
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<script>
+// Formatação automática de CPF
+function formatarCPF(input) {
+    let value = input.value.replace(/\D/g, '');
+    
+    if (value.length <= 11) {
+        value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        input.value = value;
+    }
+}
+
+// Auto-submit do formulário quando campos mudam (opcional - pode remover se quiser apenas botão)
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit quando unidade/categoria mudam
+    document.getElementById('unidade').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('categoria').addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+</script>
 {% endblock %}

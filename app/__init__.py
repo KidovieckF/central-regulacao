@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, current_app
 from flask_login import current_user
@@ -30,11 +30,22 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     def inject_template_globals():
         role = getattr(current_user, "role", None)
         unidade = getattr(current_user, "unidade_nome", None)
+        
+        def corrigir_timezone(data_utc, horas=-3):
+            """Corrige timezone UTC para local (Brasília -3h)"""
+            if not data_utc:
+                return None
+            if hasattr(data_utc, 'replace'):
+                return data_utc.replace(tzinfo=None) + timedelta(hours=horas)
+            return data_utc
+        
         return {
             "usuario_logado_role": role,
             "usuario_logado_unidade": unidade,
             "current_year": datetime.now().year,
             "app_version": current_app.config.get("APP_VERSION", "1.0.0"),
+            "timedelta": timedelta,  # ✅ DISPONÍVEL EM TODOS OS TEMPLATES
+            "corrigir_timezone": corrigir_timezone,  # ✅ FUNÇÃO GLOBAL
         }
     
     from .blueprints.chat import socket_events
