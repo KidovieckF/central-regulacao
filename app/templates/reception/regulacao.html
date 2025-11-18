@@ -16,9 +16,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
             <h2 class="text-lg font-medium text-slate-700">Filtros de Busca</h2>
             {% if filtros.unidade or filtros.categoria or filtros.cpf or filtros.nome %}
-                <a href="{{ url_for('reception.regulacao') }}" class="text-sm text-sky-600 hover:text-sky-700 underline">
-                    Limpar todos os filtros
-                </a>
+                <a href="{{ url_for('reception.regulacao') }}" class="text-sm text-sky-600 hover:text-sky-700 underline">Limpar todos os filtros</a>
             {% endif %}
         </div>
         
@@ -131,7 +129,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-200">
                     {% for pedido in pedidos %}
-                        <tr class="hover:bg-slate-50">
+                        <tr class="hover:bg-slate-50 cursor-pointer" data-href="{{ url_for('reception.folha_impressao', pedido_id=pedido.id) }}" onclick="window.open(this.dataset.href, '_blank')" role="link" aria-label="Abrir folha do pedido {{ pedido.id }}">
                             <td class="px-4 py-3 text-sm font-medium text-slate-700 whitespace-nowrap">{{ pedido.unidade_nome }}</td>
                             <td class="px-4 py-3">
                                 <div class="text-sm font-medium text-slate-700">{{ pedido.paciente_nome }}</div>

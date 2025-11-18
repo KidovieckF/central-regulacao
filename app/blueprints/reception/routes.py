@@ -548,3 +548,41 @@ def regulacao():
         filtros=filtros,
         unidades_disponiveis=unidades_disponiveis,
     )
+
+
+@reception_bp.route("/pedidos/<int:pedido_id>/folha")
+@login_required
+@roles_required("recepcao", "admin")
+def folha_impressao(pedido_id: int):
+    """Página imprimível com todos os dados do paciente e do pedido (para impressão)."""
+    pedido = pedidos_repo.obter_por_id(pedido_id)
+    if not pedido:
+        abort(404)
+
+    if current_user.role != "admin" and pedido.get("unidade_id") != current_user.unidade_id:
+        abort(403)
+
+    paciente = pacientes_repo.obter_por_id(pedido.get("paciente_id")) or {}
+    exame = None
+    consulta = None
+    if pedido.get("exame_id"):
+        exame = exames_repo.obter_por_id(pedido.get("exame_id"))
+    if pedido.get("consulta_id"):
+        consulta = consultas_repo.obter_por_id(pedido.get("consulta_id"))
+
+    unidade = None
+    if pedido.get("unidade_id"):
+        unidade = unidades_repo.obter_por_id(pedido.get("unidade_id"))
+
+    pedido["horario_exame"] = _to_time(pedido.get("horario_exame"))
+    historico = pedidos_repo.obter_historico(pedido_id)
+
+    return render_template(
+        "reception/folhaImpressao.html",
+        pedido=pedido,
+        paciente=paciente,
+        exame=exame,
+        consulta=consulta,
+        unidade=unidade,
+        historico=historico,
+    )
