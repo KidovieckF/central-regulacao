@@ -19,6 +19,7 @@ from . import admin_bp
 ROLES_DISPONIVEIS = {
     "admin",
     "recepcao",
+    "recepcao_regulacao",  # NOVO: Usuário de recepção da regulação sem necessidade de unidade
     "malote",
     "medico_regulador",
     "agendador_municipal",
@@ -28,6 +29,7 @@ ROLES_DISPONIVEIS = {
 ROLES_LABELS: dict[str, str] = {
     "admin": "Administrador",
     "recepcao": "Recepção",
+    "recepcao_regulacao": "Recepção Regulação",  # NOVO: Label para o novo role
     "malote": "Malote",
     "medico_regulador": "Médico Regulador",
     "agendador_municipal": "Agendador Municipal",
@@ -39,6 +41,7 @@ ROLES_OPCOES = [
     for valor in sorted(ROLES_DISPONIVEIS)
 ]
 
+# IMPORTANTE: Apenas "recepcao" exige unidade, "recepcao_regulacao" NÃO exige
 ROLES_EXIGEM_UNIDADE = {"recepcao"}
 
 
@@ -159,6 +162,7 @@ def criar_usuario():
         if role not in ROLES_DISPONIVEIS:
             erros.append("Selecione um perfil de acesso válido.")
 
+        # VERIFICAÇÃO IMPORTANTE: Apenas "recepcao" exige unidade, "recepcao_regulacao" NÃO
         exige_unidade = role in ROLES_EXIGEM_UNIDADE
         if exige_unidade and not unidade_id_bruto:
             erros.append("Selecione a unidade do usuário de recepção.")
@@ -246,6 +250,7 @@ def editar_usuario(usuario_id: int):
         if role not in ROLES_DISPONIVEIS:
             erros.append("Selecione um perfil de acesso válido.")
 
+        # VERIFICAÇÃO IMPORTANTE: Apenas "recepcao" exige unidade, "recepcao_regulacao" NÃO
         exige_unidade = role in ROLES_EXIGEM_UNIDADE
         if exige_unidade and not unidade_id_bruto:
             erros.append("Selecione a unidade do usuário de recepção.")

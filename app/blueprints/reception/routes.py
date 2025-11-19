@@ -122,28 +122,25 @@ def _determinar_unidade_id(unidades: list[dict]) -> Optional[int]:
     return unidade_id if unidade_id in ids_validos else None
 
 
+# ============================================================================
+# ROTA: LISTAR PEDIDOS - ADMIN TEM ACESSO A TODAS AS UNIDADES
+# ============================================================================
 @reception_bp.route("/pedidos")
 @login_required
 @roles_required("recepcao", "admin")
 def listar_pedidos():
-    unidade_id = current_user.unidade_id
-    
-    # Se admin (sem unidade vinculada), buscar de TODAS as unidades
-    if current_user.role == "admin" and unidade_id is None:
-        pedidos = pedidos_repo.listar_todos()
-        pedidos_devolvidos = pedidos_repo.listar_todos_devolvidos()
-    elif unidade_id:
+    if current_user.role == "admin":
+        pedidos = pedidos_repo.listar_todos() or []
+        pedidos_devolvidos = pedidos_repo.listar_devolvidos_todas_unidades() or []
+    else:
+        unidade_id = current_user.unidade_id
+        
+        if not unidade_id:
+            flash("Usuário de recepção sem unidade vinculada. Contate o administrador.", "danger")
+            return redirect(url_for("dashboards.home"))
+        
         pedidos = pedidos_repo.listar_por_unidade(unidade_id)
         pedidos_devolvidos = pedidos_repo.listar_devolvidos_por_unidade(unidade_id)
-    else:
-        flash("Usuário de recepção sem unidade vinculada. Contate o administrador.", "danger")
-        return redirect(url_for("dashboards.home"))
-    
-    print(f"DEBUG: unidade_id = {unidade_id}, role = {current_user.role}")
-    print(f"DEBUG: pedidos encontrados = {len(pedidos)}")
-    for p in pedidos[:5]:
-        print(f"  - ID: {p.get('id')}, Status: {p.get('status')}")
-    print(f"DEBUG: pedidos_devolvidos encontrados = {len(pedidos_devolvidos)}")
     
     return render_template(
         "reception/list.html", 
@@ -152,18 +149,25 @@ def listar_pedidos():
     )
 
 
+# ============================================================================
+# ROTA: NOVO PEDIDO - ADMIN PODE ESCOLHER UNIDADE
+# ============================================================================
 @reception_bp.route("/pedidos/novo", methods=["GET", "POST"])
 @login_required
 @roles_required("recepcao", "admin")
 def novo_pedido():
+    if current_user.role == "recepcao" and not current_user.unidade_id:
+        flash("Usuário de recepção sem unidade vinculada. Contate o administrador.", "danger")
+        return redirect(url_for("dashboards.home"))
+    
     exames = exames_repo.listar_exames()
-    consultas = consultas_repo.listar_ativas()  # ✅ USAR BANCO EM VEZ DE HARDCODED
+    consultas = consultas_repo.listar_ativas()
     unidades = unidades_repo.listar_unidades_ativas()
     dados_form = dict(request.form) if request.method == "POST" else {}
 
     if request.method == "POST":
         unidade_id = _determinar_unidade_id(unidades)
-
+        
         if unidade_id is None:
             mensagem = "Selecione a unidade do pedido." if current_user.role == "admin" else \
                 "Usuário de recepção sem unidade vinculada. Contate o administrador."
@@ -181,7 +185,6 @@ def novo_pedido():
         tipo_solicitacao = (request.form.get("tipo_solicitacao") or "exame").strip().lower()
         observacoes = (request.form.get("observacoes") or "").strip() or None
 
-        # Dependendo do tipo, pegamos o ID certo
         exame_id = None
         consulta_id = None
         erros = []
@@ -214,7 +217,6 @@ def novo_pedido():
                     if consulta_id not in ids_consultas_validos:
                         erros.append("Consulta solicitada não está disponível.")
 
-        # Validação básica do paciente
         if not paciente_data["nome"]:
             erros.append("Nome do paciente é obrigatório.")
         if not paciente_data["cpf"]:
@@ -234,7 +236,6 @@ def novo_pedido():
                 dados_form=dados_form,
             )
 
-        # Criação/atualização de paciente
         paciente_existente = pacientes_repo.obter_por_cpf(paciente_data["cpf"])
         if paciente_existente:
             pacientes_repo.atualizar_paciente(paciente_existente["id"], paciente_data)
@@ -242,7 +243,6 @@ def novo_pedido():
         else:
             paciente_id = pacientes_repo.criar_paciente(paciente_data)
 
-        # ✅ CRIAÇÃO DO PEDIDO CORRIGIDA
         if tipo_solicitacao == "exame":
             dados_pedido = {
                 "paciente_id": paciente_id,
@@ -252,7 +252,7 @@ def novo_pedido():
                 "usuario_criacao": current_user.id,
                 "observacoes": observacoes,
             }
-        else:  # consulta
+        else:
             dados_pedido = {
                 "paciente_id": paciente_id,
                 "exame_id": None,
@@ -267,7 +267,7 @@ def novo_pedido():
         registrar_historico(
             pedido_id=pedido_id,
             status=StatusPedido.AGUARDANDO_TRIAGEM,
-            descricao=f"Pedido de {tipo_solicitacao} criado pela recepção.",
+            descricao=f"Pedido de {tipo_solicitacao} criado pela {current_user.role}.",
             usuario_id=current_user.id,
         )
         flash(f"Pedido de {tipo_solicitacao} criado e enviado para triagem.", "success")
@@ -276,7 +276,7 @@ def novo_pedido():
     return render_template(
         "reception/form.html",
         exames=exames,
-        consultas=consultas,  # ✅ USAR CONSULTAS DO BANCO
+        consultas=consultas,
         unidades=unidades,
         unidade_atual=current_user.unidade_id,
         dados_form=dados_form,
@@ -285,33 +285,28 @@ def novo_pedido():
 
 @reception_bp.route("/pedidos/<int:pedido_id>")
 @login_required
-@roles_required("recepcao", "admin")
+@roles_required("recepcao", "recepcao_regulacao", "admin")
 def detalhes_pedido(pedido_id: int):
     pedido = pedidos_repo.obter_por_id(pedido_id)
     if not pedido:
         abort(404)
 
-    if current_user.role != "admin" and pedido["unidade_id"] != current_user.unidade_id:
-        abort(403)
+    if current_user.role == "admin":
+        pass
+    elif current_user.role == "recepcao_regulacao":
+        pass
+    elif current_user.role == "recepcao":
+        if pedido["unidade_id"] != current_user.unidade_id:
+            abort(403)
 
     pedido["horario_exame"] = _to_time(pedido.get("horario_exame"))
-
     historico = pedidos_repo.obter_historico(pedido_id)
-    
-    # ✅ CORREÇÃO: ajustar timezone do histórico
-    import pytz
-    from datetime import timedelta
-    
-    for evento in historico:
-        if evento['criado_em']:
-            # Subtrair 3 horas para corrigir timezone
-            evento['criado_em_local'] = evento['criado_em'] - timedelta(hours=3)
     
     return render_template(
         "reception/detalhe.html", 
         pedido=pedido, 
         historico=historico,
-        timedelta=timedelta  # ✅ PASSAR TIMEDELTA PARA TEMPLATE
+        timedelta=timedelta
     )
 
 
@@ -327,14 +322,15 @@ def cancelar_pedido(pedido_id: int):
     pedido = pedidos_repo.obter_por_id(pedido_id)
     if not pedido:
         abort(404)
-    if current_user.role != "admin" and pedido["unidade_id"] != current_user.unidade_id:
+    
+    if current_user.role == "recepcao" and pedido["unidade_id"] != current_user.unidade_id:
         abort(403)
 
     atualizar_status(
         pedido_id=pedido_id,
         status=StatusPedido.CANCELADO_RECEPCAO,
         usuario_id=current_user.id,
-        descricao=f"Cancelado pela recepção. Motivo: {justificativa}",
+        descricao=f"Cancelado pela {current_user.role}. Motivo: {justificativa}",
         extra_campos={"motivo_cancelamento": justificativa},
     )
     flash("Pedido cancelado com sucesso.", "info")
@@ -348,8 +344,8 @@ def tratar_devolucao(pedido_id: int):
     pedido = pedidos_repo.obter_por_id(pedido_id)
     if not pedido:
         abort(404)
-
-    if current_user.role != "admin" and pedido["unidade_id"] != current_user.unidade_id:
+    
+    if current_user.role == "recepcao" and pedido["unidade_id"] != current_user.unidade_id:
         abort(403)
 
     if request.method == "POST":
@@ -361,7 +357,7 @@ def tratar_devolucao(pedido_id: int):
         registrar_historico(
             pedido_id=pedido_id,
             status=StatusPedido.DEVOLVIDO_PELO_MEDICO,
-            descricao=f"Tratativa da recepção: {tratativa}",
+            descricao=f"Tratativa da {current_user.role}: {tratativa}",
             usuario_id=current_user.id,
         )
         pedidos_repo.atualizar_campos(
@@ -385,20 +381,19 @@ def tratar_devolucao(pedido_id: int):
         return redirect(url_for("reception.listar_pedidos"))
 
     pedido["horario_exame"] = _to_time(pedido.get("horario_exame"))
-
     historico = pedidos_repo.obter_historico(pedido_id)
     return render_template("reception/devolucao.html", pedido=pedido, historico=historico)
 
 
 @reception_bp.route("/pacientes/<int:paciente_id>/editar", methods=["GET", "POST"])
 @login_required
-@roles_required("recepcao", "admin")
+@roles_required("recepcao", "recepcao_regulacao", "admin")
 def editar_paciente(paciente_id: int):
     paciente = pacientes_repo.obter_por_id(paciente_id)
     if not paciente:
         abort(404)
 
-    if current_user.role != "admin" and paciente["unidade_id"] != current_user.unidade_id:
+    if current_user.role == "recepcao" and paciente["unidade_id"] != current_user.unidade_id:
         abort(403)
 
     unidades = unidades_repo.listar_unidades_ativas() if current_user.role == "admin" else []
@@ -478,16 +473,13 @@ def acompanhar_pedido():
         elif len(cpf_consulta) != 11 or not cpf_consulta.isdigit():
             flash("CPF deve conter exatamente 11 dígitos.", "danger")
         else:
-            # Buscar paciente pelo CPF
             paciente = pacientes_repo.obter_por_cpf(cpf_consulta)
             
             if not paciente:
                 flash("Nenhum pedido encontrado para este CPF.", "info")
             else:
-                # Buscar todos os pedidos do paciente
                 pedidos_paciente = pedidos_repo.listar_por_paciente(paciente["id"])
                 
-                # Para cada pedido, buscar o histórico
                 for pedido in pedidos_paciente:
                     pedido["historico"] = pedidos_repo.obter_historico(pedido["id"])
                     pedido["horario_exame"] = _to_time(pedido.get("horario_exame"))
@@ -499,25 +491,30 @@ def acompanhar_pedido():
     )
 
 
+# ============================================================================
+# ROTA: REGULAÇÃO - PARA TODOS OS PERFIS
+# ============================================================================
 @reception_bp.route("/regulacao", methods=["GET"])
 @login_required
-@roles_required("recepcao", "admin")
+@roles_required("recepcao", "recepcao_regulacao", "admin")
 def regulacao():
-    """Lista pedidos com status 'agendamento_confirmado' para recepção de regulação"""
-    # Filtros
+    """Lista pedidos para recepção de regulação"""
+    
+    # Filtros da URL
     filtros = {}
     cpf = request.args.get("cpf", "").strip()
     nome = request.args.get("nome", "").strip()
     unidade = request.args.get("unidade", "").strip()
     categoria = request.args.get("categoria", "").strip()
     
-    # Buscar todos os pedidos com status agendamento_confirmado
-    pedidos = pedidos_repo.listar_por_status(StatusPedido.AGENDAMENTO_CONFIRMADO.value)
+    # Buscar todos os pedidos inicialmente
+    pedidos = pedidos_repo.listar_todos() or []
     
-    if not pedidos:
-        pedidos = []
+    # Se não há filtros, mostrar apenas pedidos agendados
+    if not (cpf or nome or unidade or categoria):
+        pedidos = [p for p in pedidos if 'AGENDADO' in p.get('status', '').upper() or 'CONFIRMADO' in p.get('status', '').upper()]
     
-    # Aplicar filtros
+    # Aplicar filtros específicos
     if cpf:
         cpf_clean = cpf.replace(".", "").replace("-", "")
         pedidos = [p for p in pedidos if (p.get("paciente_cpf") or "").replace(".", "").replace("-", "") == cpf_clean]
@@ -532,15 +529,15 @@ def regulacao():
         filtros["unidade"] = unidade
     
     if categoria:
-        # categoria pode ser 'exame' ou 'consulta'
         if categoria == "exame":
             pedidos = [p for p in pedidos if p.get("tipo_solicitacao") == "exame"]
         elif categoria == "consulta":
             pedidos = [p for p in pedidos if p.get("tipo_solicitacao") == "consulta"]
         filtros["categoria"] = categoria
     
-    # Coletar unidades únicas para dropdown
-    unidades_disponiveis = sorted(set(p.get("unidade_nome") for p in pedidos if p.get("unidade_nome")))
+    # Unidades para dropdown
+    todos_pedidos = pedidos_repo.listar_todos() or []
+    unidades_disponiveis = sorted(set(p.get("unidade_nome") for p in todos_pedidos if p.get("unidade_nome")))
     
     return render_template(
         "reception/regulacao.html",
@@ -552,14 +549,14 @@ def regulacao():
 
 @reception_bp.route("/pedidos/<int:pedido_id>/folha")
 @login_required
-@roles_required("recepcao", "admin")
+@roles_required("recepcao_regulacao", "admin")
 def folha_impressao(pedido_id: int):
-    """Página imprimível com todos os dados do paciente e do pedido (para impressão)."""
+    """Página imprimível com todos os dados do paciente e do pedido."""
     pedido = pedidos_repo.obter_por_id(pedido_id)
     if not pedido:
         abort(404)
 
-    if current_user.role != "admin" and pedido.get("unidade_id") != current_user.unidade_id:
+    if current_user.role == "recepcao" and pedido.get("unidade_id") != current_user.unidade_id:
         abort(403)
 
     paciente = pacientes_repo.obter_por_id(pedido.get("paciente_id")) or {}

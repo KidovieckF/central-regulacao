@@ -159,6 +159,37 @@ def listar_todos() -> List[dict]:
 
 
 # ==========================================================
+# 📋 Listar todos os pedidos devolvidos (para admin) - NOVA
+# ==========================================================
+def listar_devolvidos_todas_unidades() -> List[dict]:
+    """Lista todos os pedidos devolvidos de todas as unidades"""
+    query = """
+        SELECT p.id,
+               p.status,
+               p.tipo_regulacao,
+               p.prioridade,
+               p.tipo_solicitacao,
+               p.data_solicitacao,
+               p.motivo_devolucao,
+               p.motivos_devolucao_checkboxes,
+               pa.nome AS paciente_nome,
+               pa.cpf AS paciente_cpf,
+               COALESCE(e.nome, c.especialidade) AS nome_solicitacao,
+               un.nome AS unidade_nome
+        FROM pedidos p
+        JOIN pacientes pa ON pa.id = p.paciente_id
+        LEFT JOIN exames e ON e.id = p.exame_id
+        LEFT JOIN consultas c ON c.id = p.consulta_id
+        JOIN unidades_saude un ON un.id = p.unidade_id
+        WHERE p.status = %s
+        ORDER BY p.data_atualizacao DESC
+    """
+    with mysql.get_cursor(dictionary=True) as (_, cursor):
+        cursor.execute(query, ("devolvido_medico_para_recepcao",))
+        return cursor.fetchall()
+
+
+# ==========================================================
 # 📋 Listar todos os pedidos devolvidos (para admin)
 # ==========================================================
 def listar_todos_devolvidos() -> List[dict]:
@@ -419,4 +450,35 @@ def listar_por_paciente(paciente_id: int) -> list[dict]:
     """
     with mysql.get_cursor(dictionary=True) as (_, cursor):
         cursor.execute(query, (paciente_id,))
+        return cursor.fetchall()
+
+
+# ==========================================================
+# 📋 Listar TODOS os pedidos devolvidos (NOVA - para admin)
+# ==========================================================
+def listar_devolvidos_todas_unidades() -> List[dict]:
+    """Lista todos os pedidos devolvidos de todas as unidades"""
+    query = """
+        SELECT p.id,
+               p.status,
+               p.tipo_regulacao,
+               p.prioridade,
+               p.tipo_solicitacao,
+               p.data_solicitacao,
+               p.motivo_devolucao,
+               p.motivos_devolucao_checkboxes,
+               pa.nome AS paciente_nome,
+               pa.cpf AS paciente_cpf,
+               COALESCE(e.nome, c.especialidade) AS nome_solicitacao,
+               un.nome AS unidade_nome
+        FROM pedidos p
+        JOIN pacientes pa ON pa.id = p.paciente_id
+        LEFT JOIN exames e ON e.id = p.exame_id
+        LEFT JOIN consultas c ON c.id = p.consulta_id
+        JOIN unidades_saude un ON un.id = p.unidade_id
+        WHERE p.status = %s
+        ORDER BY p.data_atualizacao DESC
+    """
+    with mysql.get_cursor(dictionary=True) as (_, cursor):
+        cursor.execute(query, ("devolvido_medico_para_recepcao",))
         return cursor.fetchall()

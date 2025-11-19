@@ -1,7 +1,4 @@
 SCHEMA_STATEMENTS = [
-    # -------------------------------------------------------------------------
-    # Tabelas principais do sistema
-    # -------------------------------------------------------------------------
     """
     CREATE TABLE IF NOT EXISTS unidades_saude (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -12,6 +9,7 @@ SCHEMA_STATEMENTS = [
         ativo TINYINT(1) DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS usuarios (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -21,6 +19,7 @@ SCHEMA_STATEMENTS = [
         role ENUM(
             'admin',
             'recepcao',
+            'recepcao_regulacao',  -- NOVO: Usuário de recepção da regulação
             'malote',
             'medico_regulador',
             'agendador_municipal',
@@ -35,6 +34,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (unidade_id) REFERENCES unidades_saude(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS pacientes (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -52,6 +52,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (unidade_id) REFERENCES unidades_saude(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS exames (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -59,6 +60,7 @@ SCHEMA_STATEMENTS = [
         descricao TEXT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS consultas (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,6 +71,7 @@ SCHEMA_STATEMENTS = [
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS pedidos (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -86,6 +89,7 @@ SCHEMA_STATEMENTS = [
         usuario_atualizacao INT NOT NULL,
         motivo_cancelamento TEXT,
         motivo_devolucao TEXT,
+        motivos_devolucao_checkboxes JSON NULL COMMENT 'Motivos de devolução selecionados via checkboxes (formato JSON)',
         pendente_recepcao TINYINT(1) DEFAULT 0,
         anexos JSON NULL,
         data_exame DATE,
@@ -105,6 +109,7 @@ SCHEMA_STATEMENTS = [
         )
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS historico_pedidos (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -117,6 +122,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (criado_por) REFERENCES usuarios(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS tentativas_contato (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -130,10 +136,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
-
-    # -------------------------------------------------------------------------
-    # Módulo de CHAT
-    # -------------------------------------------------------------------------
+    
     """
     CREATE TABLE IF NOT EXISTS conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -142,6 +145,7 @@ SCHEMA_STATEMENTS = [
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS messages (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -154,6 +158,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS attachments (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -167,6 +172,7 @@ SCHEMA_STATEMENTS = [
         FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    
     """
     CREATE TABLE IF NOT EXISTS conversation_participants (
         id INT AUTO_INCREMENT PRIMARY KEY,

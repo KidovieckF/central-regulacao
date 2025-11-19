@@ -215,10 +215,22 @@
                   Chat
               </a>
 
-              {% if role in ['recepcao', 'admin'] %}
+              <!-- Link direto para recepcao_regulacao -->
+              {% if role == 'recepcao_regulacao' %}
+                <a href="{{ url_for('reception.regulacao') }}"
+                   class="nav-link{% if request.endpoint == 'reception.regulacao' %} nav-link-active{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Recepção Regulação
+                </a>
+              {% endif %}
+
+              <!-- Dropdown de Recepção para recepcao e admin -->
+              {% if role == 'recepcao' or role == 'admin' %}
                 <div class="relative" data-dropdown>
                   <button type="button"
-                          class="nav-link w-full justify-between lg:w-auto lg:justify-start{% if request.blueprint == 'reception' and request.endpoint != 'reception.acompanhar_pedido' %} nav-link-active{% endif %}"
+                          class="nav-link w-full justify-between lg:w-auto lg:justify-start{% if request.blueprint == 'reception' and request.endpoint not in ['reception.acompanhar_pedido', 'reception.regulacao'] %} nav-link-active{% endif %}"
                           data-dropdown-toggle
                           aria-expanded="false">
                     <span class="flex items-center gap-2">
@@ -235,15 +247,18 @@
                        data-dropdown-menu
                        data-state="closed">
                     <div class="p-2">
-                      <a href="{{ url_for('reception.regulacao') }}"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-50 {% if request.endpoint == 'reception.regulacao' %}font-semibold text-primario-700{% endif %}">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primario-100 text-primario-600">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </span>
-                        Recepção Regulação
-                      </a>
+                      <!-- Regulação para admin -->
+                      {% if role == 'admin' %}
+                        <a href="{{ url_for('reception.regulacao') }}"
+                           class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-50 {% if request.endpoint == 'reception.regulacao' %}font-semibold text-primario-700{% endif %}">
+                          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primario-100 text-primario-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                          </span>
+                          Recepção Regulação
+                        </a>
+                      {% endif %}
                       <a href="{{ url_for('reception.listar_pedidos') }}"
                          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-50 {% if request.endpoint == 'reception.listar_pedidos' %}font-semibold text-primario-700{% endif %}">
                         <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primario-100 text-primario-600">
@@ -389,7 +404,6 @@
                   </a>
                 </div>
               {% else %}
-                <!-- Links para usuários não autenticados -->
                 <div class="flex items-center gap-2">
                   <a href="{{ url_for('auth.login') }}" class="btn-outline text-sm">
                     Entrar no Sistema
